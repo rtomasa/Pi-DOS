@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage the user's MIDI assets locally; binary ROMs/SoundFonts stay out of git."""
+"""Import MIDI build inputs into assets/midi; binary payloads stay out of git."""
 import argparse
 import hashlib
 import json
@@ -8,7 +8,7 @@ import shutil
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
-CACHE = ROOT / 'output/midi-assets'
+ASSETS = ROOT / 'assets/midi'
 
 def verify(path, item):
     if not path.is_file() or path.stat().st_size != item['bytes']:
@@ -21,31 +21,31 @@ def verify(path, item):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, help='ScummVM directory containing extra/ and soundfonts/')
-    parser.add_argument('--install', type=Path, help='Copy verified cached assets to this directory')
+    parser.add_argument('--install', type=Path, help='Copy verified assets to this directory')
     args = parser.parse_args()
     manifest = json.loads((ROOT / 'configs/midi-assets.json').read_text())
     for item in manifest['files']:
-        cached = CACHE / item['destination']
+        asset = ASSETS / item['destination']
         if args.source:
             source = args.source / item['source']
             verify(source, item)
-            cached.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile(dir=cached.parent, delete=False) as stream:
+            asset.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(dir=asset.parent, delete=False) as stream:
                 temporary = Path(stream.name)
             try:
                 shutil.copyfile(source, temporary)
                 verify(temporary, item)
-                temporary.replace(cached)
-                cached.chmod(0o644)
+                temporary.replace(asset)
+                asset.chmod(0o644)
             finally:
                 temporary.unlink(missing_ok=True)
-        verify(cached, item)
+        verify(asset, item)
         if args.install:
             target = args.install / item['destination']
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(cached, target)
+            shutil.copyfile(asset, target)
             target.chmod(0o644)
-    print('Verified six MIDI assets' + (f'; installed in {args.install}' if args.install else f' in {CACHE}'))
+    print('Verified six MIDI assets' + (f'; installed in {args.install}' if args.install else f' in {ASSETS}'))
 
 if __name__ == '__main__':
     try:

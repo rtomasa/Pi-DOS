@@ -146,8 +146,10 @@ python3 tools/dos/midi-assets.py --source /home/rtomas/Datos/Emulation/bios/RePl
 ```
 
 The importer verifies `configs/midi-assets.json` hashes and stores files in
-the ignored `output/midi-assets` cache. Build hooks package that cache into
+the ignored `assets/midi` directory. Build hooks package those inputs into
 the initramfs and data partition; ROMs and SF2 files are not stored in Git.
+See the [asset setup guide](../../assets/midi/README.md) for migration from the
+previous `output/midi-assets` location.
 
 Mixer controls expose master, SB digital, FM, GUS, CMS, PC speaker, Tandy,
 Tandy DAC, Disney/Covox and internal MIDI music. Values are left:right percentages

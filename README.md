@@ -36,6 +36,9 @@ See the [technical plan](docs/technical-plan.md) and
 
 ## Build the shared Raspberry Pi ARM64 image
 
+Import the required SoundFont/ROM inputs into `assets/midi` before the first
+build; see the [MIDI asset setup guide](assets/midi/README.md).
+
 ```sh
 make image-config
 JOBS=4 make image

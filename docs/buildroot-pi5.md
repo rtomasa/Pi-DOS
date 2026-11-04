@@ -58,6 +58,10 @@ files, including the reboot request followed by `EXIT`.
 
 ## Build locally
 
+First import the required MIDI build inputs into `assets/midi` using the
+[asset setup guide](../assets/midi/README.md). These files are kept outside
+`output/` and must be supplied separately on a fresh clone.
+
 ```sh
 make image-config
 JOBS=4 make image
@@ -80,6 +84,7 @@ dependencies are incorporated without resetting local selections.
 | `br2-external/` | External board configuration and packages; no Buildroot fork |
 | `src/init/init.c` | Custom root PID 1 supervisor |
 | `configs/pi-dos.conf` | Appliance DOS runtime defaults |
+| `assets/midi/` | User-supplied, checksum-verified MIDI build inputs (binaries ignored by Git) |
 | `output/src/buildroot-2026.08/` | Verified, extracted upstream Buildroot |
 | `dl/buildroot/` | Buildroot-managed package download cache |
 | `output/buildroot-arm64/` | Isolated AArch64 cross-build output |

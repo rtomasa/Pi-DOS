@@ -55,7 +55,7 @@ int main(int argc, char **argv) {
                     str(ROOT/'src/common/midi_profiles.c'), '-lasound', '-o', str(worker)], check=True)
     source = work / 'PIDOS.CFG'
     generated = work / 'runtime.conf'
-    assets = ROOT / 'output/midi-assets'
+    assets = ROOT / 'assets/midi'
     def check(profile, label, device, root=assets, extras=b'', mode=b'intelligent', ready_after=None, scans=0):
         original = (b'[pidos]\nmidi_profile='+profile.encode()+b'\n'+extras+
                     b'[midi]\nmpu401='+mode+b'\nmpubase=330\nmpuirq=-1\n'

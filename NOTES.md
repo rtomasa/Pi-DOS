@@ -1,5 +1,7 @@
 # TODO
 
+Maybe I can instruct github copilot to create all the required things. Could you provide the instructions?
+
 [pi02]
 # Default:
 # arm_freq=1000

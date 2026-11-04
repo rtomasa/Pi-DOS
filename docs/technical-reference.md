@@ -688,7 +688,7 @@ or UART MPU-401, default port 330h, automatic IRQ, external destination selectio
 and optional SysEx delay for older modules.
 
 The user-supplied assets are identified by hashes in `configs/midi-assets.json`.
-The importer places them in ignored `output/midi-assets`; ROM/SF2 payloads are
+The importer places them in ignored `assets/midi`; ROM/SF2 payloads are
 not committed to Git. Build hooks stage supplied assets into the image and data
 partition, preserving existing destination files. Missing assets/devices are
 reported in the boot MIDI row and disable the managed profile for that boot.
@@ -1279,7 +1279,9 @@ they do not flash a physical card or update EEPROM.
 
 A fresh clone must stage required user-supplied MIDI assets through
 `tools/dos/midi-assets.py --source /path/to/authorized/assets`. The exact files
-must match the manifest. Downloads for other packs are checksum-verified and
+must match the manifest and are stored in `assets/midi`, outside build output.
+See the [asset setup guide](../assets/midi/README.md) for import and migration.
+Downloads for other packs are checksum-verified and
 cached. Offline operation of the **runtime** is distinct from an **offline
 build**, which requires every necessary archive/asset already cached.
 
