@@ -66,8 +66,9 @@ Assets are in C:\SYSTEM\MIDI: SC55.SF2, GMROLAND.SF2, MT32 and CM32L.
 Missing assets/devices disable MIDI for that boot and appear in DOS MIDI.
 Reboot after changing MIDI output or interface settings.
 
-Mixer: left:right percentages, 0=mute, 100=normal, up to 200. Above 100 may
-clip. Use left/right arrows or [-]/[+] for 5% steps, or Enter for a preset
+Mixer: left:right percentages from 0=mute to 100=normal maximum, including
+CD audio from images and USB drives. Only present mixer channels are shown.
+Use left/right arrows or [-]/[+] for 5% steps, or Enter for a preset
 or custom stereo value. Active channels apply IMMEDIATELY when the selected
 sound hardware matches the running setup. The page shows LIVE or AFTER
 REBOOT. Cancel restores starting live levels at whole-percent precision;

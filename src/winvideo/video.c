@@ -467,9 +467,8 @@ BOOL FAR PASCAL __export VideoDialog(HWND dialog, UINT message, WPARAM wparam, L
             mode = selected_mode();
             if (mode && check_adapter(dialog, mode)) {
                 if (apply_mode(mode)) {
-                    MessageBox(dialog, "Settings saved. Exit and start Windows again to apply them.\n"
-                               "If Windows cannot start, run PVRESTOR.BAT from your Windows directory in DOS.",
-                               "Pi-DOS Display", MB_OK | MB_ICONINFORMATION);
+                    pv_restart_windows(dialog, "Display settings saved. Restart Windows to apply them.\n"
+                               "If Windows cannot start, run PVRESTOR.BAT from your Windows directory in DOS.");
                     EndDialog(dialog, 1);
                 } else report(dialog);
             }
@@ -582,10 +581,9 @@ int FAR PASCAL __export Install(HWND owner)
     }
     path_join(source, source_dir, "PIDOS.CPL");
     if (!change_applet(owner, source, 0)) return 0;
-    MessageBox(owner, "Pi-DOS Windows drivers and configuration controls are installed.\n"
+    pv_restart_windows(owner, "Pi-DOS Windows drivers and configuration controls are installed.\n"
                "Previous configuration applets have been replaced.\n"
-               "Open Control Panel and select Pi-DOS Configuration to configure drivers.",
-               "Pi-DOS Configuration Setup", MB_OK | MB_ICONINFORMATION);
+               "Restart Windows, then open Control Panel and select Pi-DOS Configuration.");
     return 1;
 missing:
     sprintf(error_text, "A driver file is missing or has the wrong size:\n%s\n"
@@ -673,7 +671,6 @@ int pv_restore(HWND owner)
                    "Pi-DOS hardware settings are kept in PIDOS.CFG and are not restored here.",
                    "Restore previous Windows settings", MB_OKCANCEL | MB_ICONQUESTION) != IDOK) return 0;
     if (!restore_snapshot("PVIDLAST")) { report(owner); return 0; }
-    MessageBox(owner, "Previous Windows settings restored. Exit and start Windows again.",
-               "Pi-DOS Configuration", MB_OK | MB_ICONINFORMATION);
+    pv_restart_windows(owner, "Previous Windows settings restored. Restart Windows to apply them.");
     return 1;
 }

@@ -392,3 +392,22 @@ presents idle updates only after a real frame. PID 1 passes `lcd_hud` through
 creates no diagnostics logs and does not alter the DOS framebuffer.
 `tools/image/test-hud.sh` checks native SDL-dummy behavior; real Pi/KMS remains
 necessary for the standalone implementation.
+
+`0045-windows-live-mixer.patch` exposes the mixer's user levels through the
+existing DOSBox integration device. The Win16 Volume panel can query available
+channels and preview master, sampled audio, FM, SoundFont/MT-32 and other sources
+without launching DOS tasks. Registers identify the protocol version and carry
+stereo gain in hundredths of a percent; absent channels and reserved values are
+rejected. Hardware mixer scaling remains separate. The integration device is
+enabled in supervised Pi-DOS sessions, including older saved configurations.
+`tools/windows/check-volume.py --sdl-library-path PATH` runs the shared panel
+state and byte-I/O transport inside the ARM64 DOS runtime for both internal MIDI
+engines, covering live levels, independent mute, stereo restoration and saved
+configuration preservation. Windows 3.1 on the Pi still needs UI validation.
+
+`0046-cd-audio-mixer-levels.patch` retains CD image and USB CD mixer levels
+when channels are created after saved boot settings, and across image remounts.
+Both PIDOSCFG and the Windows Volume panel expose independent CD image and
+USB CD audio controls, limited to 0-100% like the other sources. The USB CD
+channel is registered when the drive interface is installed, so its level and
+mute can be set before playback. The live mixer check covers both CD channels.

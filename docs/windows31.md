@@ -77,7 +77,34 @@ Pi-DOS installation paths and playback still require guest validation.
 | Gravis UltraSound Classic / GF1 | Launch original Gravis 4.11 installer after closing Windows |
 | AdLib | Open Windows Drivers / Add / Ad Lib; Windows installation disks may be requested |
 | PC speaker | Native install of Microsoft's SPEAK / SPEAKER.DRV (wave playback) |
-| Game Blaster / CMS, Tandy | Explicitly unavailable: no confirmed compatible Windows 3.x package located |
+| Game Blaster / CMS, Tandy | Omitted from the selector: no confirmed compatible Windows 3.x package located |
+
+The Windows driver dropdown lists supported devices only. Change emulated sound
+hardware through **Pi-DOS settings** in the main window; the Audio and MIDI
+panel contains only Windows audio controls.
+
+After installing/updating the configuration tool, installing an audio driver,
+applying a display mode or restoring Windows
+INIs, the tool offers to restart Windows. It also honours an audio driver
+configuration dialog that requests a restart. **Restart Windows...** on the main
+page lets you restart later. Declining or cancelling shutdown keeps saved
+settings. Emulated hardware changes still require a full Pi-DOS reboot.
+
+**Volume...** opens a native Win16 live mixer, showing only currently available
+sources. Master, digital sound, FM, internal MIDI and PC speaker have independent
+levels and mute, with additional active cards included. CD audio from mounted
+disc images and USB CD drives has separate controls. Internal MIDI controls
+SoundFont or MT-32 output independently of the Sound Blaster mixer. External
+USB MIDI volume remains on the receiving device. Sliders link left/right from
+0 to 100%; untouched stereo levels are retained. Changes apply immediately;
+**Save** persists changed channels through the shared `PIDOS.CFG` save engine,
+and **Cancel** restores opening live levels. No reboot is needed for preview.
+
+Live volume requires the runtime from `0045-windows-live-mixer.patch` as well as
+the updated applet. It extends the existing integration device at ports 28h-2Ah
+with versioned, bounded per-channel gain registers. The device is enabled for
+supervised Pi-DOS sessions and in the default configuration. Older runtimes
+show an explanation instead of pretending to change the live volume.
 
 [Microsoft's card/driver table](https://ftp.zx.net.nz/pub/archive/ftp.microsoft.com/MISC/KB/en-us/124/944.HTM)
 identifies SBW31 for SB2 and SBP2W31 for the CT1600 Pro 2. Each Creative
@@ -104,9 +131,21 @@ rollback transaction. SB Pro's mixer is also copied. Existing different
 binaries are never overwritten; use Windows Drivers / Add / Unlisted with
 the cached OEM disk for a vendor upgrade. VSBPD.386 is referenced in its
 card-specific cache folder. The installer replaces only legacy sound VxD
-entries and preserves repeated unrelated `device=` entries. Existing MIDI
-maps are preserved. Restart Windows after installation, then select or
-create the desired FM or external MIDI mapping using Windows MIDI Mapper.
+entries and preserves repeated unrelated `device=` entries. Creative installation
+also installs the card's original `MIDIMAP.CFG`, replacing the current MIDI
+setups as the vendor installer does. Previous different maps are backed up
+as `WINDOWS\SYSTEM\MIDIMAP.PVB`; reinstalling identical maps keeps that backup.
+The MIDI map and INIs commit together, with rollback on failure. Restart Windows,
+then the default setup is **SBP2 All MIDI**, **SB16 All MIDI**, or **SB MIDI Out**
+for SB2. The installer selects its setup ID in the staged Windows 3.1 map header;
+all other vendor map bytes remain unchanged. This routes music to the configured
+Pi-DOS MIDI destination (SC-55 by default). Use Windows MIDI Mapper to choose
+another setup, such as **SBP2 All FM** for the SB Pro 2 synthesizer. The MIDI Mapper
+button opens the original Control Panel applet from `MIDIMAP.DRV`.
+The same MIDI-map installation applies to all three Creative cards. Gravis'
+original installer includes its own `MIDIMAP.CFG`; AdLib uses Windows' own
+installation path and MIDI setup. PC speaker provides wave playback only and
+does not replace MIDI setups.
 Windows' common Timer, MIDI Mapper, MCI Sound and MCI MIDI Sequencer files
 must already be installed; the Windows Drivers button provides their normal
 installation UI and can request the user's Windows disks.
@@ -162,6 +201,8 @@ transaction to install them, rolling back a failed commit. `Restore previous`
 restores the last full INI snapshot, including unrelated settings at that
 time. If Windows cannot start, run `PVRESTOR.BAT` from the Windows directory
 at the DOS prompt, then run `WIN`. There is no automatic timed rollback.
+The INI snapshots do not include MIDI setups. To restore the previous MIDI
+setups, exit Windows and copy `SYSTEM\MIDIMAP.PVB` to `SYSTEM\MIDIMAP.CFG`.
 
 The installer preflights all payloads and refuses to overwrite different
 existing driver binaries. It retains existing fonts and vendor INIs. Files

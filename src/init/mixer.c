@@ -11,7 +11,8 @@ static int percentage(const char **text, unsigned long *result)
     unsigned long n = strtoul(*text, &end, 10);
     if (n > 200) return 0;
     *text = end;
-    *result = n;
+    /* Older saved amplification levels now stop at unity gain. */
+    *result = n > 100 ? 100 : n;
     return 1;
 }
 
@@ -22,7 +23,8 @@ void pi_dos_mixer(FILE *out, const char *config)
         {"mixer_gus", "GUS"}, {"mixer_cms", "CMS"}, {"mixer_speaker", "SPKR"},
         {"mixer_tandy", "TANDY"}, {"mixer_tandydac", "TANDYDAC"},
         {"mixer_disney", "DISNEY"},
-        {"mixer_midi", "SYNTH"}, {"mixer_midi", "MT32"}
+        {"mixer_midi", "SYNTH"}, {"mixer_midi", "MT32"},
+        {"mixer_cd", "CDAUDIO"}, {"mixer_usbcd", "USBCD"}
     };
     for (unsigned int i = 0; i < sizeof(channels) / sizeof(channels[0]); ++i) {
         char value[32];

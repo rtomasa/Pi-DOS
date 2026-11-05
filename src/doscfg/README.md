@@ -152,8 +152,10 @@ See the [asset setup guide](../../assets/midi/README.md) for migration from the
 previous `output/midi-assets` location.
 
 Mixer controls expose master, SB digital, FM, GUS, CMS, PC speaker, Tandy,
-Tandy DAC, Disney/Covox and internal MIDI music. Values are left:right percentages
-from 0 to 200; amplification above 100 can clip. Arrow keys adjust by 5%, or
+Tandy DAC, Disney/Covox, internal MIDI music, CD images and USB CD audio.
+Only channels present in the running mixer are shown; unavailable cards such
+as Disney/Covox are omitted. Values are left:right percentages from 0 to 100,
+with 100 as normal maximum. Arrow keys adjust by 5%, or
 choose a preset/custom stereo value. On first entering Mixer, the utility reads
 the running hardware via `CONFIG -ALL -GET` and levels via `MIXER`. When selected
 hardware matches, enabled channels update immediately through
@@ -394,8 +396,11 @@ to `output/tools/openwatcom`. The archive is cached under `dl/`. It makes no
 system-wide installation. An existing compiler installation can be selected
 with `WATCOM=/path/to/watcom make dos-config` (with Linux x64 `binl64` tools).
 
-The build uses `-0 -ms -os` (8086, small model, size optimization) and treats
-warnings as errors. The adjacent `PIDOSCFG.build.json` records source hashes,
+The build uses `-0 -mc -zt=4096 -os` (8086, compact model, size optimization) and treats
+warnings as errors. Far data and heap allocations avoid exhausting the 64 KiB
+near data segment as settings grow; the program still runs in real mode without
+an extender. The link map must retain at least 8 KiB of DGROUP headroom for
+runtime allocations. The adjacent `PIDOSCFG.build.json` records source hashes,
 compiler driver hash and executable hash. Image verification rejects stale
 sources or a stale executable and checks the packed initramfs copy.
 `bash tools/image/build.sh components` builds only the ARM64 runtime and PID 1

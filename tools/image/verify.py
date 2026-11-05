@@ -2,6 +2,7 @@
 """Check the shared Raspberry Pi ARM64 image; this is not a hardware boot test."""
 import hashlib
 import argparse
+import configparser
 import json
 from pathlib import Path
 import re
@@ -383,8 +384,13 @@ def main():
     if diagnostic:
         default_config = default_config.replace(b'diagnostics=false\r\n', b'diagnostics=true\r\n')
     require(packed_config == default_config, 'Editable PIDOS.CFG missing/stale in PI-DOS')
-    require(b'[cpu]\r\ncputype=pentium\r\ncore=dynamic_rec\r\ncycles=fixed 64180\r\n'
-            in packed_config, 'Fresh image must default to the Pentium 120 MHz CPU profile')
+    parsed_config = configparser.ConfigParser(interpolation=None, strict=False, allow_no_value=True)
+    parsed_config.read_string(packed_config.decode('ascii'))
+    require(tuple(parsed_config.get('cpu', key, fallback='') for key in ('cputype', 'core', 'cycles'))
+            == ('pentium', 'dynamic_rec', 'fixed 64180'),
+            'Fresh image must default to the Pentium 120 MHz CPU profile')
+    require(parsed_config.getboolean('cpu', 'integration device', fallback=False),
+            'Fresh image must enable the integration device for live Windows volume')
     require(b'machine=svga_s3\r\n' in packed_config,
             'Fresh image must default to S3 Trio64 video')
     require(b'[pidos]\r\n' in packed_config and b'timezone=Europe/Madrid\r\n' in packed_config,

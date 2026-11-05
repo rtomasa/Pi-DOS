@@ -2,6 +2,7 @@
   "drivers": [
     {
       "id": "SB2",
+      "midi_setup": "SB MIDI Out",
       "card": 4,
       "enabled": true,
       "label": "Sound Blaster 2.0",
@@ -20,6 +21,7 @@
     },
     {
       "id": "PRO2",
+      "midi_setup": "SBP2 All MIDI",
       "card": 5,
       "enabled": true,
       "label": "Sound Blaster Pro 2",
@@ -38,6 +40,7 @@
     },
     {
       "id": "SB16",
+      "midi_setup": "SB16 All MIDI",
       "card": 6,
       "enabled": true,
       "label": "Sound Blaster 16",

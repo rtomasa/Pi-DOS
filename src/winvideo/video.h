@@ -15,6 +15,7 @@
 #define IDC_DISPLAY 201
 #define IDC_AUDIO 202
 #define IDC_OPTIONS 203
+#define IDC_RESTART_WINDOWS 204
 #define IDD_OPTIONS 210
 #define IDC_PAGE 211
 #define IDC_FIELDS 212
@@ -31,6 +32,10 @@
 #define IDC_AUDIO_INFO 234
 #define IDC_AUDIO_CARD 235
 #define IDC_WINDOWS_DRIVERS 236
+#define IDC_VOLUME 237
+#define IDD_VOLUME 240
+#define IDC_VOLUME_STATUS 241
+#define IDC_VOLUME_ROW 400
 #define IDD_SETUP 300
 #define IDC_UNINSTALL 301
 
@@ -50,6 +55,9 @@ void pv_display(HWND owner);
 void pv_control(HWND owner);
 void pv_options(HWND owner);
 void pv_audio(HWND owner);
+void pv_volume(HWND owner);
+void pv_restart_windows(HWND owner, const char *reason);
+unsigned pv_volume_channels(void);
 int pv_stage_audio(HWND owner, const char *source);
 #endif
 #endif

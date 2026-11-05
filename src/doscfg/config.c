@@ -32,6 +32,7 @@ const CfgSpec cfg_specs[K_COUNT] = {
  S("pidos","mixer_cms","100:100",PAGE_MIXER), S("pidos","mixer_speaker","100:100",PAGE_MIXER),
  S("pidos","mixer_tandy","100:100",PAGE_MIXER), S("pidos","mixer_tandydac","100:100",PAGE_MIXER),
  S("pidos","mixer_disney","100:100",PAGE_MIXER), S("pidos","mixer_midi","100:100",PAGE_MIXER),
+ S("pidos","mixer_cd","100:100",PAGE_MIXER), S("pidos","mixer_usbcd","100:100",PAGE_MIXER),
  S("dos","keyboardlayout","sp",PAGE_SYSTEM), S("config","country","34",PAGE_SYSTEM),
  S("pidos","timezone","Europe/Madrid",PAGE_SYSTEM),
  S("voodoo","voodoo_card","software",PAGE_VIDEO),
@@ -114,13 +115,28 @@ static int number(const char *text, long min, long max, int base) {
 static void sync_cpu(void) {
  strcpy(cfg_type,values[K_CPU_TYPE]); strcpy(cfg_core,values[K_CPU_CORE]); strcpy(cfg_cycles,values[K_CPU_CYCLES]);
 }
+/* Display legacy amplified values at unity without rewriting unrelated settings. */
+static void limit_mixer(char *value) {
+ char *end; unsigned long left,right;
+ if(!isdigit((unsigned char)*value)) return;
+ left=strtoul(value,&end,10); right=left;
+ if(*end==':') {
+  if(!isdigit((unsigned char)end[1])) return;
+  right=strtoul(end+1,&end,10);
+ }
+ if(*end || left>65534UL || right>65534UL) return;
+ if(left>100 || right>100)
+  sprintf(value,"%lu:%lu",left>100?100UL:left,right>100?100UL:right);
+}
 const char *cfg_get(int key) { return key>=0 && key<K_COUNT ? values[key] : ""; }
 int cfg_changed(void) { int i; for(i=0;i<K_COUNT;++i) if(dirty[i]) return 1; return 0; }
 int cfg_is_dirty(int key) { return key>=0 && key<K_COUNT && dirty[key]; }
 /* Display the running mixer level without silently persisting it. */
 void cfg_seed(int key,const char *value) {
- if(key>=K_VOL_MASTER && key<=K_VOL_MIDI && !dirty[key] && strlen(value)<CFG_VALUE_SIZE)
+ if(key>=K_VOL_MASTER && key<=K_VOL_USB_CD && !dirty[key] && strlen(value)<CFG_VALUE_SIZE) {
   strcpy(values[key],value);
+  limit_mixer(values[key]);
+ }
 }
 int cfg_set(int key, const char *value) {
  unsigned int i; char copy[CFG_VALUE_SIZE], *colon; int valid=1;
@@ -200,10 +216,10 @@ int cfg_set(int key, const char *value) {
   for(i=0;value[i];++i) if(!isalnum((unsigned char)value[i]) && !strchr("/_+-",value[i])) valid=0;
   break;
  default:
-  if(key>=K_VOL_MASTER && key<=K_VOL_MIDI) {
+  if(key>=K_VOL_MASTER && key<=K_VOL_USB_CD) {
    strcpy(copy,value); colon=strchr(copy,':');
-   if(colon) { *colon++=0; valid=number(colon,0,200,10); }
-   valid=valid && number(copy,0,200,10);
+   if(colon) { *colon++=0; valid=number(colon,0,100,10); }
+   valid=valid && number(copy,0,100,10);
   }
   break;
  }
@@ -350,6 +366,7 @@ int cfg_load(const char *path) {
   if(end<content_size) ++end;
  }
  /* Existing files without a monitor setting retain their previous CRT setup. */
+ for(key=K_VOL_MASTER;key<=K_VOL_USB_CD;++key) limit_mixer(values[key]);
  if(file_exists && !monitor_found) strcpy(values[K_MONITOR],"crt");
  sync_cpu(); return 1;
 }

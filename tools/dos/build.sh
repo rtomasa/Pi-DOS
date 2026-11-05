@@ -16,10 +16,20 @@ out="$root/output/doscfg"
 mkdir -p "$out"
 printf '#define PI_DOS_VERSION "%s"\n' "$(cat "$root/VERSION")" > "$out/pi_dos_version.h"
 cd "$out"
-"$compiler" -q -bt=dos -l=dos -0 -ms -os -s -wx -i="$root/src/common" -i="$out" -fe=PIDOSCFG.EXE \
+# Far data keeps stdio's heap independent of the nearly full 64 KiB DGROUP.
+"$compiler" -q -bt=dos -l=dos -0 -mc -zt=4096 -os -s -wx -fm=PIDOSCFG.map -i="$root/src/common" -i="$out" -fe=PIDOSCFG.EXE \
     "$root/src/doscfg/main.c" "$root/src/doscfg/config.c" "$root/src/doscfg/forms.c" \
     "$root/src/doscfg/live.c" "$root/src/doscfg/midi.c" "$root/src/common/cpu_profiles.c" \
     "$root/src/common/video_profiles.c" "$root/src/common/midi_profiles.c"
+python3 - PIDOSCFG.map <<'PY'
+from pathlib import Path
+import re
+import sys
+match = re.search(r'^DGROUP\s+[0-9a-f]+:[0-9a-f]+\s+([0-9a-f]+)\s*$',
+                  Path(sys.argv[1]).read_text(), re.MULTILINE | re.IGNORECASE)
+if not match or 65536 - int(match[1], 16) < 8192:
+    sys.exit('PIDOSCFG needs at least 8 KiB of DGROUP headroom for runtime allocations.')
+PY
 install -m 0644 PIDOSCFG.EXE "$root/br2-external/board/raspberrypi/dos/PIDOSCFG.EXE"
 python3 - "$root" "$compiler" <<'PY'
 import hashlib
@@ -39,7 +49,7 @@ paths = ['VERSION', 'src/doscfg/main.c', 'src/doscfg/config.c', 'src/doscfg/conf
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 manifest = {
-    'target': '16-bit DOS MZ, 8086 instruction set, small memory model, no FPU/extender',
+    'target': '16-bit DOS MZ, 8086 instruction set, compact memory model, no FPU/extender',
     'source_sha256': {path: digest(root / path) for path in paths},
     'compiler_driver_sha256': digest(Path(sys.argv[2])),
     'executable_sha256': digest(root / 'br2-external/board/raspberrypi/dos/PIDOSCFG.EXE'),

@@ -175,6 +175,7 @@ static void fill_fields(HWND dialog, PageState FAR *state, int selected)
 {
     char text[180];
     int i;
+    if (state->page == PAGE_MIXER) form_mixer_channels(pv_volume_channels());
     if (state->branch == FIELD_MIDI_SETTINGS) state->count = form_midi_fields(state->fields);
     else if (state->branch) state->count = form_network_fields(state->branch, state->fields);
     else if (state->page == PAGE_CPU) {

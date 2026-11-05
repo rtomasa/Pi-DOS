@@ -1,0 +1,60 @@
+Pi-DOS: expose live mixer levels to the native Windows 3.1 volume panel.
+
+--- a/src/hardware/mixer.cpp
++++ b/src/hardware/mixer.cpp
+@@ -137,6 +137,8 @@
+ 	mixer.mastervol[0] = vol0;
+ 	mixer.mastervol[1] = vol1;
+ }
++
++#include "pidos_mixer_control.h"
+ 
+ MixerChannel * MIXER_AddChannel(MIXER_Handler handler,Bitu freq,const char * name) {
+     MixerChannel * chan=new MixerChannel();
+--- a/src/ints/bios.cpp
++++ b/src/ints/bios.cpp
+@@ -695,12 +695,21 @@
+ bool bootvm = false, bootfast = false;
+ static std::string dosbox_int_debug_out;
+ 
++#include "pidos_mixer_api.h"
++uint32_t PiDosMixerRead(uint32_t reg);
++bool PiDosMixerWrite(uint32_t reg, uint32_t value);
+ uint32_t Mixer_MIXQ(void);
+ uint32_t VGA_QuerySizeIG(void);
+ 
+ /* read triggered, update the regsel */
+ void dosbox_integration_trigger_read() {
+ 	dosbox_int_error = false;
++	if (dosbox_int_regsel == PIDOS_MIXER_INFO ||
++	    (dosbox_int_regsel >= PIDOS_MIXER_CHANNEL &&
++	     dosbox_int_regsel < PIDOS_MIXER_CHANNEL + PIDOS_MIXER_CHANNELS)) {
++		dosbox_int_register = PiDosMixerRead(dosbox_int_regsel);
++		return;
++	}
+ 
+ 	switch (dosbox_int_regsel) {
+ 		case DOSBOX_ID_REG_IDENTIFY:
+@@ -989,6 +998,11 @@
+ /* write triggered */
+ void dosbox_integration_trigger_write() {
+ 	dosbox_int_error = false;
++	if (dosbox_int_regsel >= PIDOS_MIXER_CHANNEL &&
++	    dosbox_int_regsel < PIDOS_MIXER_CHANNEL + PIDOS_MIXER_CHANNELS) {
++		dosbox_int_error = !PiDosMixerWrite(dosbox_int_regsel, dosbox_int_register);
++		return;
++	}
+ 
+ 	LOG(LOG_MISC,LOG_DEBUG)("DOSBox-X integration write 0x%08lx val 0x%08lx\n",
+ 			(unsigned long)dosbox_int_regsel,
+@@ -2137,7 +2151,9 @@
+ 
+     LOG(LOG_MISC,LOG_DEBUG)("Initializing ISA PnP emulation");
+ 
+-    enable_integration_device = section->Get_bool("integration device");
++    const char *pidos_supervised = getenv("PI_DOS_SUPERVISED");
++    enable_integration_device = section->Get_bool("integration device") ||
++        (pidos_supervised && !strcmp(pidos_supervised, "1"));
+     enable_integration_device_pnp = section->Get_bool("integration device pnp");
+     ISAPNPBIOS = section->Get_bool("isapnpbios");
+     {

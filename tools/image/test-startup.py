@@ -165,14 +165,17 @@ int main(int argc, char **argv) {
         summary = check(b'[pidos]\nmidi_profile='+profile+b'\n', b'Pentium 120 MHz', b'fixed 64180')
         assert b'DOS MIDI   : '+label in summary
     mixed = check(b'[pidos]\nmixer_master=65:75\nmixer_sb=0\nmixer_fm=201\n'
-                  b'mixer_gus=10 & echo BAD\nmixer_cms=20:30:40\nmixer_speaker=50:60\nmixer_midi=80:90\n',
+                  b'mixer_gus=10 & echo BAD\nmixer_cms=20:30:40\nmixer_speaker=50:60\nmixer_midi=80:90\n'
+                  b'mixer_cd=75:85\nmixer_usbcd=120:65\n',
                   b'Pentium 120 MHz', b'fixed 64180')
     commands = [line for line in mixed.splitlines() if line.startswith(b'Z:')]
     assert commands == [b'Z:\\SYSTEM\\MIXER.COM /NOSHOW MASTER 65:75',
                         b'Z:\\SYSTEM\\MIXER.COM /NOSHOW SB 0:0',
                         b'Z:\\SYSTEM\\MIXER.COM /NOSHOW SPKR 50:60',
                         b'Z:\\SYSTEM\\MIXER.COM /NOSHOW SYNTH 80:90',
-                        b'Z:\\SYSTEM\\MIXER.COM /NOSHOW MT32 80:90']
+                        b'Z:\\SYSTEM\\MIXER.COM /NOSHOW MT32 80:90',
+                        b'Z:\\SYSTEM\\MIXER.COM /NOSHOW CDAUDIO 75:85',
+                        b'Z:\\SYSTEM\\MIXER.COM /NOSHOW USBCD 100:65']
     assert all(len(line) < 126 for line in commands)
     output = ROOT / 'output/doscfg'
     output.mkdir(parents=True, exist_ok=True)

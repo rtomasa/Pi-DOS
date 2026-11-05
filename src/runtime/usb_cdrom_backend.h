@@ -47,7 +47,13 @@ class Interface final : public CDROM_Interface {
         }
     }
 public:
-    Interface() { class_id = ID_USB; }
+    Interface()
+    {
+        class_id = ID_USB;
+        channel = MIXER_AddChannel(audio, 44100, "USBCD");
+        channel->Enable(false);
+        active() = this;
+    }
     ~Interface() override
     {
         if (channel) { channel->Enable(false); MIXER_DelChannel(channel); }
@@ -106,9 +112,6 @@ public:
     bool PlayAudioSector(unsigned long start, unsigned long count) override
     {
         if (start > UINT32_MAX || count > UINT32_MAX) return false;
-        if (!channel) {
-            channel = MIXER_AddChannel(audio, 44100, "USBCD"); active() = this;
-        }
         const bool ok = run([&] { return player.play(start, count); });
         channel->Enable(ok); return ok;
     }

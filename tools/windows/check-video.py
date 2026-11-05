@@ -58,7 +58,7 @@ def main():
         if name.endswith((".DRV", ".DLL", ".FON")):
             assert data[:2] == b"MZ", f"Invalid expanded driver/font: {name}"
     # Win16 NE exports are uppercase; the native launcher requests INSTALL.
-    applet_exports = {"INSTALL", "INSTALLFROM", "UNINSTALL", "CPLAPPLET", "WEP", "CONTROLDIALOG", "OPTIONSDIALOG", "VALUEDIALOG", "AUDIODIALOG"}
+    applet_exports = {"INSTALL", "INSTALLFROM", "UNINSTALL", "CPLAPPLET", "WEP", "CONTROLDIALOG", "OPTIONSDIALOG", "VALUEDIALOG", "AUDIODIALOG", "VOLUMEDIALOG"}
     assert applet_exports | {"PIDOS"} <= exports(out / "DISK/PIDOS.CPL")
     assert applet_exports | {"PIDINST"} <= exports(out / "DISK/PIDINST.DLL")
     assert "SETUPDIALOG" in exports(out / "DISK/SETUP.EXE")
@@ -159,6 +159,28 @@ int pv_test_rename(const char *from, const char *to) {
         rewrite = ctypes.CDLL(str(audio_library)).pa_sound_vxd
         rewrite.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p]
         rewrite.restype = ctypes.c_int
+        select_midi = ctypes.CDLL(str(audio_library)).pa_midi_default
+        select_midi.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+        select_midi.restype = ctypes.c_int
+        for card, setup in (("SB2", b"SB MIDI Out"), ("PRO2", b"SBP2 All MIDI"),
+                            ("SB16", b"SB16 All MIDI")):
+            original_map = (out / "DISK/AUDIO" / card / "MIDIMAP.CFG").read_bytes()
+            selected_map = temp / "MIDIMAP.CFG"
+            selected_map.write_bytes(original_map)
+            assert select_midi(bytes(selected_map), setup) == 1
+            result = selected_map.read_bytes()
+            directory = struct.unpack_from("<H", result, 8)[0]
+            count = struct.unpack_from("<H", result, directory + 2)[0]
+            entries = [result[directory + 4 + i * 54:directory + 4 + (i + 1) * 54] for i in range(count)]
+            entry = next(e for e in entries if e[:16].split(b"\0", 1)[0] == setup)
+            assert result[6:8] == entry[48:50], "Select the setup ID, not its directory index"
+            assert result[:6] + result[8:] == original_map[:6] + original_map[8:]
+            assert select_midi(bytes(selected_map), setup) == 1
+            assert selected_map.read_bytes() == result, "Repeated installation keeps the same default"
+            assert select_midi(bytes(selected_map), b"Missing setup") == 0
+            assert selected_map.read_bytes() == result
+        selected_map.write_bytes(b"not a MIDI configuration")
+        assert select_midi(bytes(selected_map), b"SBP2 All MIDI") == 0
         original, prepared = temp / "audio-input.ini", temp / "audio-output.ini"
         devices = (b"[boot]\r\ndisplay.drv=S3.DRV\r\n[386Enh]\r\n"
                    b"device=*vpicd\r\n  device = C:\\OLD\\VSBPD.386 ; previous audio\r\n"
@@ -208,6 +230,42 @@ int pv_test_rename(const char *from, const char *to) {
         (stage / "WIN.INI").unlink()
         assert run() == 0
         assert all((current / n).read_text() == "old:" + n for n in names)
+        # Creative maps replace an existing Windows map, or install a missing
+        # one. A late map failure must roll back the already committed INIs.
+        audio_commit = ctypes.CDLL(str(library)).pv_commit_audio
+        audio_commit.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p]
+        audio_commit.restype = ctypes.c_int
+        system = current / "SYSTEM"
+        system.mkdir()
+        midi_map = system / "MIDIMAP.CFG"
+
+        def run_audio():
+            return audio_commit(bytes(current), bytes(system), bytes(stage))
+
+        for card, setup in (("SB2", b"SB General FM"), ("PRO2", b"SBP2 All FM"),
+                            ("SB16", b"SB16 All FM")):
+            vendor_map = (out / "DISK/AUDIO" / card / "MIDIMAP.CFG").read_bytes()
+            assert setup in vendor_map, "Each card must supply its own MIDI setups"
+            for previous in (None, b"previous custom MIDI setups"):
+                prepare()
+                midi_map.unlink(missing_ok=True)
+                if previous is not None:
+                    midi_map.write_bytes(previous)
+                (stage / "MIDIMAP.CFG").write_bytes(vendor_map)
+                assert run_audio() == 1
+                assert midi_map.read_bytes() == vendor_map
+                assert all((current / n).read_text() == "new:" + n for n in names)
+        prepare()
+        midi_map.write_bytes(b"previous custom MIDI setups")
+        assert run_audio() == 0, "A missing vendor map must fail before changing INIs"
+        assert all((current / n).read_text() == "old:" + n for n in names)
+        (stage / "MIDIMAP.CFG").write_bytes(vendor_map)
+        obstacle = stage / "PV3.OLD"
+        obstacle.mkdir()
+        (obstacle / "occupied").write_text("force map commit failure")
+        assert run_audio() == 0
+        assert midi_map.read_bytes() == b"previous custom MIDI setups"
+        assert all((current / n).read_text() == "old:" + n for n in names)
         prepare()
         # Force the second rename to fail AFTER the first file was committed.
         obstacle = stage / "PV1.OLD"
@@ -215,7 +273,7 @@ int pv_test_rename(const char *from, const char *to) {
         (obstacle / "occupied").write_text("force rename failure")
         assert run() == 0
         assert all((current / n).read_text() == "old:" + n for n in names)
-    print("PASS: package hashes, distinct Win16 applet/installer modules, legacy upgrade/reinstall/uninstall and rollback, EDID modes, sound VxDs and INI transaction")
+    print("PASS: package hashes, distinct Win16 applet/installer modules, legacy upgrade/reinstall/uninstall and rollback, EDID modes, sound VxDs, INI and MIDI-map transactions")
 
 
 if __name__ == "__main__":

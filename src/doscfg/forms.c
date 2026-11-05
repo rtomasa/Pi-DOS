@@ -3,12 +3,14 @@
 #include <string.h>
 const char *page_names[PAGE_COUNT] = {"CPU", "Memory", "Video", "Sound", "Mixer", "Input", "Network", "System"};
 static const char shortcut_choices[] = PIDOS_SHORTCUT_CHOICES;
+static unsigned mixer_channels = 1;
+void form_mixer_channels(unsigned mask) { mixer_channels = mask | 1; }
 const char *memory_sizes[MEMORY_COUNT] = {"1", "2", "4", "8", "16", "32", "64", "128"};
 #define ADD(k,t,l,c,f,h) do { fields[n].key=k; fields[n].type=t; fields[n].label=l; fields[n].choices=c; fields[n].catalog=f; fields[n].help=h; ++n; } while(0)
 int form_fields(int page, Field *fields)
 {
  int n=0,card=cfg_card(),i;
- static const char *volnames[]={"Master output","Sound Blaster digital","AdLib / FM music","Gravis Ultrasound","Game Blaster / CMS","PC speaker","Tandy three-voice","Tandy DAC","Disney / Covox","Internal MIDI music"};
+ static const char *volnames[]={"Master output","Sound Blaster digital","AdLib / FM music","Gravis Ultrasound","Game Blaster / CMS","PC speaker","Tandy three-voice","Tandy DAC","Disney / Covox","Internal MIDI music","CD audio (image)","CD audio (USB)"};
  if(page==PAGE_VIDEO) {
   ADD(K_MACHINE,FIELD_VIDEO,"Video card",0,0,"Select the emulated video adapter. S3 Trio64 is the default.");
   ADD(K_VOODOO,FIELD_VOODOO,"3dfx Voodoo",0,0,"Checked enables software Voodoo emulation with 12 MiB of video RAM.");
@@ -37,9 +39,10 @@ int form_fields(int page, Field *fields)
   ADD(K_MIDI_PROFILE,FIELD_MIDI,"MIDI output",0,0,"MIDI music is independent of the sound card used for digital effects.");
   ADD(-1,FIELD_MIDI_SETTINGS,"MIDI settings...",0,0,"MPU-401 interface, port, IRQ and external USB MIDI destination.");
  } else if(page==PAGE_MIXER) {
-  for(i=0;i<=K_VOL_MIDI-K_VOL_MASTER;++i) {
-   ADD(K_VOL_MASTER+i,FIELD_VOLUME,volnames[i],"0|25|50|75|100|125|150|175|200",0,
-       "Left:right percent. 0=mute, 100=normal; above 100 may clip.");
+  for(i=0;i<=K_VOL_USB_CD-K_VOL_MASTER;++i) {
+   if(!(mixer_channels & (1U<<i))) continue;
+   ADD(K_VOL_MASTER+i,FIELD_VOLUME,volnames[i],"0|25|50|75|100",0,
+       "Left:right percent. 0=mute, 100=normal maximum.");
   }
  } else if(page==PAGE_INPUT) {
   ADD(K_JOY_TYPE,FIELD_CHOICE,"DOS joystick type","2axis=Two 2-axis joysticks (default)|4axis=One 4-axis joystick|4axis_2=4-axis on controller 2|fcs=Thrustmaster FCS|ch=CH Flightstick|none=Disabled|auto=Automatic (stable 2-axis)",0,"Games calibrate and assign DOS joystick controls in their own setup.");

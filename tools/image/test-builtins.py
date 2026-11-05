@@ -15,23 +15,30 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--qemu', type=Path, default=ROOT/'output/tools/qemu-user/usr/bin/qemu-aarch64')
 parser.add_argument('--sdl-library-path', type=Path, required=True,
                     help='ARM64 SDL2 with dummy video/audio; production KMS-only SDL cannot run headlessly')
+parser.add_argument('--setup-exe', type=Path,
+                    default=ROOT/'br2-external/board/raspberrypi/dos/PIDOSCFG.EXE')
 args = parser.parse_args()
 if not args.qemu.is_file() or not (args.sdl_library_path/'libSDL2-2.0.so.0').is_file():
     parser.error('Provide an ARM64 QEMU executable and an ARM64 SDL2 build with dummy backends.')
 runtime = ROOT/'output/buildroot-arm64/target/pi-dos/pi-dos'
 (ROOT/'output/smoke').mkdir(exist_ok=True)
 work = Path(tempfile.mkdtemp(prefix='boot-programs.', dir=ROOT/'output/smoke'))
-shutil.copyfile(ROOT/'br2-external/board/raspberrypi/dos/PIDOSCFG.EXE', work/'PIDOSCFG.EXE')
-# Match the actual eleven mixer calls generated after the welcome message.
+shutil.copyfile(args.setup_exe, work/'PIDOSCFG.EXE')
+# Match the actual mixer calls generated after the welcome message.
 channels = re.findall(r'\{"mixer_[a-z]+", "([A-Z0-9]+)"\}', (ROOT/'src/init/mixer.c').read_text())
-assert len(channels) == 11
+assert len(channels) == 13
 commands = ['mount c "'+str(work)+'"', 'c:', '@echo off', 'echo Welcome to Pi-DOS >BOOT.OUT']
+commands += ['SET PATH=C:\\PROGRAMS\\TOOLS;C:\\SYSTEM;Z:\\;Z:\\SYSTEM;Z:\\DOS;Z:\\BIN;Z:\\TEXTUTIL',
+             'SET TEMP=C:\\TEMP', 'SET TMP=C:\\TEMP', 'SET BLASTER=A220 I7 D1 T5']
+# Exercise startup with a populated DOS environment rather than a minimal shell.
+commands += ['SET PIDOS_TEST_ENV%d=' % i + 'x' * 16 for i in range(64)]
 for channel in channels:
     level = '70:80' if channel == 'MASTER' else '100:100'
     commands.append('Z:\\SYSTEM\\MIXER.COM /NOSHOW '+channel+' '+level+' >>BOOT.OUT')
 commands += ['Z:\\SYSTEM\\MIXER.COM >MIXER.OUT',
              'Z:\\SYSTEM\\CONFIG.COM -get joystick joysticktype >JOY.OUT',
              'PIDOSCFG.EXE /LIST >SETUP.OUT',
+             'PIDOSCFG.EXE /PROFILE 386-33 /CONFIG C:\\STARTUP.CFG >SAVE.OUT',
              'echo PI_DOS_BOOT_PROGRAMS_OK >>BOOT.OUT', 'exit']
 cmd = [str(args.qemu), '-L', str(ROOT/'output/buildroot-arm64/target'),
        '-E', 'LD_LIBRARY_PATH='+str(args.sdl_library_path.resolve()), str(runtime),
@@ -58,9 +65,11 @@ assert b'PI_DOS_BOOT_PROGRAMS_OK' in boot and b'Unable to run program' not in bo
 assert re.search(rb'MASTER\s+70:80', (work/'MIXER.OUT').read_bytes())
 assert b'2axis' in (work/'JOY.OUT').read_bytes()
 assert b'Automatic' in (work/'SETUP.OUT').read_bytes()
+assert b'Saved' in (work/'SAVE.OUT').read_bytes()
+assert b'cputype=386' in (work/'STARTUP.CFG').read_bytes()
 (work/'result.json').write_text(json.dumps({
     'passed': True, 'mixer_commands': len(channels),
     'runtime_sha256': hashlib.sha256(runtime.read_bytes()).hexdigest(),
-    'scope': 'Actual ARM64 runtime: MOUNT, eleven boot MIXER calls, MIXER query, CONFIG query, PIDOSCFG DOS EXE; dummy SDL/audio, no hardware boot',
+    'scope': 'Actual ARM64 runtime: MOUNT, boot MIXER calls, MIXER query, CONFIG query, PIDOSCFG startup and file saving with a populated DOS environment; dummy SDL/audio, no hardware boot',
 }, indent=2)+'\n')
-print('PASS: ARM64 boot programs, eleven mixer commands, applied master levels and DOS EXE loading: '+str(work))
+print('PASS: ARM64 boot programs, mixer commands, PIDOSCFG startup and file saving with a populated DOS environment: '+str(work))

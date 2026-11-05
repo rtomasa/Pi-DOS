@@ -76,6 +76,8 @@ def prepare(cache, disk, manifest_path, fetch=False):
             files.append(dict(name=name, size=len(data), sha256=hashlib.sha256(data).hexdigest()))
         expected = ['INSTALL.EXE'] if driver['method'] == 'dos' else [driver['wave'], 'OEMSETUP.INF']
         expected += [name for name in (driver['fm'], driver['aux']) if name]
+        if driver['fm']:
+            expected.append('MIDIMAP.CFG')
         for name in expected:
             if name not in seen:
                 raise ValueError(f'Missing vendor audio payload: {name}')
@@ -96,9 +98,10 @@ def prepare(cache, disk, manifest_path, fetch=False):
     for driver in catalog:
         for file in driver['files']:
             code.append('    {"%s",%dUL},' % (file['name'], file['size']))
-        profiles.append('    {"%s","%s",%d,%d,%d,%d,"%s","%s","%s"},' %
+        profiles.append('    {"%s","%s",%d,%d,%d,%d,"%s","%s","%s","%s"},' %
                         (driver['id'], driver['label'], driver['card'], driver['method'] == 'dos',
-                         offset, len(driver['files']), driver['wave'], driver['fm'], driver['aux']))
+                         offset, len(driver['files']), driver['wave'], driver['fm'], driver['aux'],
+                         driver.get('midi_setup', '')))
         offset += len(driver['files'])
     code.extend(['};', 'static const AudioProfile audio_profiles[] = {', *profiles, '};',
                  '#define AUDIO_PROFILE_COUNT (sizeof(audio_profiles)/sizeof(audio_profiles[0]))', ''])

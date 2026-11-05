@@ -8,7 +8,7 @@ BEGIN
     IDS_INFO "Display, audio drivers and Pi-DOS settings"
 END
 
-IDD_CONTROL DIALOG 0, 0, 270, 174
+IDD_CONTROL DIALOG 0, 0, 270, 187
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Pi-DOS Configuration"
 FONT 8, "MS Sans Serif"
@@ -21,7 +21,8 @@ BEGIN
     PUSHBUTTON "&Pi-DOS settings...", IDC_OPTIONS, 10, 96, 86, 20
     LTEXT "CPU, memory, sound cards, mixer, input, network and system.", -1, 104, 96, 152, 26
     PUSHBUTTON "Restore Windows &INIs...", IDC_RESTORE, 10, 139, 117, 14
-    DEFPUSHBUTTON "Close", IDCANCEL, 207, 139, 50, 14
+    PUSHBUTTON "Restart &Windows...", IDC_RESTART_WINDOWS, 140, 139, 117, 14
+    DEFPUSHBUTTON "Close", IDCANCEL, 207, 163, 50, 14
 END
 
 IDD_OPTIONS DIALOG 0, 0, 300, 237
@@ -53,7 +54,7 @@ BEGIN
     PUSHBUTTON "Cancel", IDCANCEL, 220, 159, 50, 14
 END
 
-IDD_AUDIO DIALOG 0, 0, 300, 256
+IDD_AUDIO DIALOG 0, 0, 300, 232
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Audio and MIDI - Pi-DOS Configuration"
 FONT 8, "MS Sans Serif"
@@ -63,11 +64,22 @@ BEGIN
     COMBOBOX IDC_AUDIO_CARD, 84, 74, 205, 100, CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON "&Install selected driver...", IDC_INSTALL_AUDIO, 10, 101, 140, 17
     PUSHBUTTON "&Configure installed audio...", IDC_CONFIG_AUDIO, 10, 125, 140, 17
+    PUSHBUTTON "&Volume...", IDC_VOLUME, 158, 125, 131, 17
     PUSHBUTTON "Windows &MIDI Mapper...", IDC_MIDI_MAP, 10, 149, 140, 17
     PUSHBUTTON "Windows &Drivers...", IDC_WINDOWS_DRIVERS, 158, 149, 131, 17
-    PUSHBUTTON "Pi-DOS sound &settings...", IDC_OPTIONS, 10, 173, 140, 17
-    LTEXT "SB2, SB Pro 2, SB16 and PC speaker install in Windows. Gravis runs its original installer after closing Windows.", -1, 10, 202, 280, 24
-    DEFPUSHBUTTON "Close", IDCANCEL, 239, 233, 50, 14
+    LTEXT "SB2, SB Pro 2, SB16 and PC speaker install in Windows. Gravis runs its original installer after closing Windows.", -1, 10, 178, 280, 24
+    DEFPUSHBUTTON "Close", IDCANCEL, 239, 209, 50, 14
+END
+
+IDD_VOLUME DIALOG 0, 0, 364, 270
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Volume - Pi-DOS Configuration"
+FONT 8, "MS Sans Serif"
+BEGIN
+    LTEXT "Adjust the levels of the running audio sources. Save keeps them across reboots; Cancel restores the opening levels.", -1, 10, 9, 344, 22
+    LTEXT "100% is the maximum. External USB MIDI volume is controlled on the receiving device.", IDC_VOLUME_STATUS, 10, 215, 344, 24
+    DEFPUSHBUTTON "&Save", IDOK, 246, 246, 50, 14
+    PUSHBUTTON "Cancel", IDCANCEL, 303, 246, 50, 14
 END
 
 IDD_VIDEO DIALOG 0, 0, 270, 212

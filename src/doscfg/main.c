@@ -602,7 +602,7 @@ static void step_volume(const Field *field,int direction) {
  int left=100,right; char value[40];
  if(sscanf(cfg_get(field->key),"%d:%d",&left,&right)!=2) right=left;
  left+=direction*5; right+=direction*5;
- if(left<0) left=0; if(left>200) left=200; if(right<0) right=0; if(right>200) right=200;
+ if(left<0) left=0; if(left>100) left=100; if(right<0) right=0; if(right>100) right=100;
  sprintf(value,"%d:%d",left,right); cfg_set(field->key,value);
 }
 static int memory_selected(void) {
@@ -691,9 +691,10 @@ static int setup(const char *path) {
  Field fields[FORM_MAX_FIELDS]; union REGS r;
  screen_start();
  for(;;) {
+  if(redraw) { mouse_visible(0); live_update(page==PAGE_MIXER); mouse_visible(1); }
   n=(page==PAGE_CPU || page==PAGE_MEMORY)?1:form_fields(page,fields);
   if(focus>=n+3) focus=0;
-  if(redraw) { mouse_visible(0); live_update(page==PAGE_MIXER); mouse_visible(1); draw_page(page,focus,path); redraw=0; }
+  if(redraw) { draw_page(page,focus,path); redraw=0; }
   key=key_read(0); ch=key&255; scan=key>>8; action=0;
   if(key) {
    redraw=1;

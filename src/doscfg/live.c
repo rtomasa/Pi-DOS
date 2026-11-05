@@ -5,13 +5,16 @@
 #include <string.h>
 #include "config.h"
 #include "live.h"
-#define CHANNELS (K_VOL_MIDI-K_VOL_MASTER+1)
+#include "forms.h"
+#define CHANNELS (K_VOL_USB_CD-K_VOL_MASTER+1)
 /* Only hardware settings through the MT-32 directory are compared live.
  * Keep unrelated system/network settings out of the 16-bit data segment. */
 #define LIVE_KEY_COUNT (K_MT32_DIR+1)
-static const char *channels[CHANNELS]={"MASTER","SB","FM","GUS","CMS","SPKR","TANDY","TANDYDAC","DISNEY","SYNTH"};
+static const char *channels[CHANNELS]={"MASTER","SB","FM","GUS","CMS","SPKR","TANDY","TANDYDAC","DISNEY","SYNTH","CDAUDIO","USBCD"};
 static char midi_channel[8]="SYNTH";
-static char runtime[LIVE_KEY_COUNT][CFG_VALUE_SIZE];
+/* CPU/memory keys preceding K_MACHINE are never queried by the live mixer. */
+static char runtime_values[LIVE_KEY_COUNT-K_MACHINE][CFG_VALUE_SIZE];
+#define runtime(key) runtime_values[(key)-K_MACHINE]
 static unsigned char have[LIVE_KEY_COUNT],active[CHANNELS],seeded[CHANNELS];
 static char original[CHANNELS][32],applied[CHANNELS][32];
 static int state,matching;
@@ -47,7 +50,7 @@ static int snapshot(void) {
   *equals++=0; trim(line); trim(equals);
   if(strlen(equals)>=CFG_VALUE_SIZE) continue;
   for(key=K_MACHINE;key<LIVE_KEY_COUNT;++key) if(!stricmp(line,cfg_specs[key].key)) {
-   strcpy(runtime[key],equals); have[key]=1;
+   strcpy(runtime(key),equals); have[key]=1;
   }
  }
  fclose(file);
@@ -66,7 +69,7 @@ static int snapshot(void) {
  return active[0] && have[K_SB_TYPE];
 }
 static int matches(int key) {
- return have[key] && !stricmp(cfg_get(key),runtime[key]);
+ return have[key] && !stricmp(cfg_get(key),runtime(key));
 }
 static int hardware_matches(void) {
  int key,card=cfg_card();
@@ -84,7 +87,7 @@ static int hardware_matches(void) {
   if(!matches(K_MPU_BASE) || !matches(K_MPU_IRQ)) return 0;
   sprintf(midi_config,"%s%s",cfg_get(K_MIDI_CONFIG),
    !stricmp(cfg_get(K_MIDI_DEVICE),"alsa") && !stricmp(cfg_get(K_MIDI_DELAY),"true")?" delaysysex":"");
-  if(!have[K_MIDI_CONFIG] || stricmp(midi_config,runtime[K_MIDI_CONFIG])) return 0;
+  if(!have[K_MIDI_CONFIG] || stricmp(midi_config,runtime(K_MIDI_CONFIG))) return 0;
   if(!stricmp(cfg_get(K_MIDI_DEVICE),"mt32") && (!matches(K_MT32_MODEL) || !matches(K_MT32_DIR))) return 0;
   if(!stricmp(cfg_get(K_MIDI_DEVICE),"alsa") && cfg_is_dirty(K_MIDI_DELAY)) return 0;
  }
@@ -102,9 +105,11 @@ void live_cancel(void) {
   if(active[i] && strcmp(applied[i],original[i])) apply(i,original[i]);
 }
 void live_update(int mixer_page) {
- int i,key;
+ int i,key; unsigned mask=1;
  if(!state && mixer_page) state=snapshot()?1:-1;
  if(state!=1) return;
+ for(i=0;i<CHANNELS;++i) if(active[i]) mask|=1U<<i;
+ form_mixer_channels(mask);
  matching=hardware_matches();
  if(!matching) { live_cancel(); return; }
  for(i=0;i<CHANNELS;++i) if(active[i]) {

@@ -36,7 +36,7 @@ Exit Windows and reboot Pi-DOS to apply saved settings.
 These settings control emulated hardware and physical audio/display output.
 Windows driver pages configure Windows itself. Choose matching Windows
 drivers after changing emulated hardware. Mixer settings save boot levels;
-they do not preview volume changes during the Windows session.
+for immediate changes use Audio and MIDI / Volume instead.
 
 Keyboard, country and timezone lists use the existing Z:\BIN catalogs.
 External USB MIDI discovery remains in DOS PIDOSCFG; this version can retain
@@ -76,8 +76,10 @@ Existing Windows 3.1 drivers are included for:
 
 AdLib uses Windows' own driver: Install selected driver opens Windows Drivers;
 choose Add, then Ad Lib. Windows may request its installation disks.
-CMS and Tandy show unavailable because no confirmed compatible Windows 3.x
-driver package was located. No replacement sound driver is generated.
+The Windows driver selector only lists supported devices. CMS and Tandy are
+omitted because no confirmed compatible Windows 3.x driver package was located.
+Change emulated sound hardware through Pi-DOS settings in the main window.
+No replacement sound driver is generated.
 
 1. Select the emulated card in Pi-DOS sound settings. Save, exit Windows
    and reboot Pi-DOS before installing its Windows driver.
@@ -98,22 +100,62 @@ Windows' Timer, MIDI Mapper, [MCI] Sound and [MCI] MIDI Sequencer components
 must already be installed. Use the Windows Drivers button to add missing
 components using your Windows installation disks.
 
-Native installation preserves existing MIDI maps. After restarting Windows,
-use Windows MIDI Mapper to select or create an FM or external MIDI mapping.
-Vendor MIDIMAP.CFG files remain in the cached OEM driver folders. The SB16
+Creative installation includes the selected card's original MIDIMAP.CFG,
+replacing the current MIDI setups as the vendor installer does. Previous
+different maps are backed up as WINDOWS\SYSTEM\MIDIMAP.PVB; reinstalling
+the same maps keeps that backup. After restarting Windows, use Windows MIDI
+Mapper to select the card's FM or external MIDI setup (for example, SBP2 All
+FM for the SB Pro 2 synthesizer). Installation selects all-channel MIDI output
+by default: SBP2 All MIDI, SB16 All MIDI, or SB MIDI Out for SB2. This uses the
+MIDI destination selected in Pi-DOS (SC-55 by default). The SB16
 cache is WINDOWS\PIDOSAUD\SB16WU; others use SB2, PRO2, GUS or SPEAKER.
 Do not remove cached folders while their drivers are registered: the sound
 VxD uses a path into its card's cache.
 
-Windows INIs are backed up before installation. Native changes are staged
-and committed with rollback; unrelated VxDs are preserved. Gravis' DOS helper
+This MIDI-map installation applies to SB2, SB Pro 2 and SB16. Gravis' original
+installer supplies its own MIDIMAP.CFG during Windows setup. AdLib uses the
+Windows installation path and Windows' own MIDI setup. PC speaker is wave-only
+and does not install or replace MIDI setups.
+
+Windows INIs are backed up before installation. Native INI and MIDI-map changes
+are staged and committed together with rollback; unrelated VxDs are preserved. Gravis' DOS helper
 also preserves and restores C:\AUTOEXEC.BAT and C:\CONFIG.SYS. If interrupted,
 ROOTBACK.TAG and recovery copies remain in WINDOWS\PIDOSAUD\GUS;
 PVRUN.EXE prints recovery instructions and refuses another run.
 
 Configure installed audio opens the active wave driver's configuration.
-Windows MIDI Mapper opens the mapper's configuration dialog. Windows Drivers
+Windows MIDI Mapper opens the original mapper Control Panel applet. Windows Drivers
 opens the original Windows Drivers Control Panel applet within this app.
+
+RESTART WINDOWS
+---------------
+Tool installation/upgrades, audio driver installation, display changes and
+restoring Windows INIs offer
+to restart Windows after saving. A driver configuration dialog can also
+request a restart. Use Restart Windows on the main page to do it later.
+Save work in other applications first. Declining or cancelling shutdown keeps
+your saved settings. Pi-DOS hardware changes still require a full Pi-DOS reboot.
+
+VOLUME
+------
+Audio and MIDI / Volume opens the live mixer. Only channels available in the
+running emulator are shown: Master, Digital sound, FM music, Internal MIDI,
+PC speaker, CD audio (image), CD audio (USB) and other enabled sound sources.
+Internal MIDI covers both
+SoundFont and MT-32 synthesis. External USB MIDI uses the receiving device's
+volume controls.
+
+Use the sliders or arrow keys to adjust linked left/right levels from 0 to
+100 percent. 100 percent is normal; these controls do not amplify sources.
+Mute retains the slider level for unmuting. Changes apply immediately.
+Save keeps changed levels in PIDOS.CFG for future boots. Cancel or closing
+the window restores the opening live levels, including stereo balance.
+Unchanged channels and unrelated saved settings are preserved.
+
+Live volume requires the matching updated Pi-DOS runtime (patch 0045), not
+just a new Windows applet. Older runtimes show an explanatory message.
+The panel uses the emulator integration device without running DOS tasks
+or replacing the vendor audio drivers.
 
 RECOVERY
 --------
@@ -122,6 +164,8 @@ present) PROGMAN.INI are saved in WINDOWS\PVIDBACK. Before display changes,
 audio installation or driver configuration, previous files are saved in
 WINDOWS\PVIDLAST. These are complete INI snapshots, including unrelated
 Windows settings at that time. They do not include PIDOS.CFG or MIDIMAP.CFG.
+The separate MIDIMAP.PVB backup can be copied back to SYSTEM\MIDIMAP.CFG
+from DOS after exiting Windows to restore the previous MIDI setups.
 
 If Windows cannot start after a change, at the DOS prompt run:
   CD \WINDOWS

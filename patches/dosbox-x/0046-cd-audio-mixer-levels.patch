@@ -1,0 +1,35 @@
+Pi-DOS: retain CD image and USB CD audio levels across late mounts.
+
+--- a/src/hardware/mixer.cpp
++++ b/src/hardware/mixer.cpp
+@@ -167,7 +167,9 @@
+     chan->SetFreq(freq);
+     chan->next=mixer.channels;
+     chan->SetScale(1.0);
+-    chan->SetVolume(1,1);
++    const int pidos_cd = PiDosMixerCdSlot(name);
++    chan->SetVolume(pidos_cd < 0 ? 1 : pidos_cd_volume[pidos_cd][0],
++                    pidos_cd < 0 ? 1 : pidos_cd_volume[pidos_cd][1]);
+     chan->enabled=false;
+     chan->last[0] = chan->last[1] = 0;
+     chan->delta[0] = chan->delta[1] = 0;
+@@ -210,6 +212,7 @@
+ }
+ 
+ void MixerChannel::SetVolume(float _left,float _right) {
++    PiDosMixerRememberCd(name, _left, _right);
+     volmain[0]=_left;
+     volmain[1]=_right;
+     UpdateVolume();
+@@ -962,6 +965,11 @@
+         }
+         if (cmd->FindString("RECORD",temp_line,false)) {
+             MakeVolume((char *)temp_line.c_str(),mixer.recordvol[0],mixer.recordvol[1]);
++        }
++        // CD media can be mounted after boot-time saved mixer levels are applied.
++        for (int i = 0; i < 2; ++i) {
++            if (cmd->FindString(pidos_cd_names[i],temp_line,false))
++                MakeVolume((char *)temp_line.c_str(),pidos_cd_volume[i][0],pidos_cd_volume[i][1]);
+         }
+         MixerChannel * chan=mixer.channels;
+         while (chan) {

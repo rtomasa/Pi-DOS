@@ -3,6 +3,45 @@
 #include <ctype.h>
 #include "audio_ini.h"
 
+static unsigned midi_word(const unsigned char *data)
+{
+    return data[0] | ((unsigned)data[1] << 8);
+}
+
+int pa_midi_default(const char *path, const char *name)
+{
+    unsigned char header[14], directory[4], entry[54];
+    unsigned offset, capacity, count, i;
+    unsigned long data;
+    long size;
+    int ok = 0;
+    FILE *file;
+    if (!*name || strlen(name) >= 16) return 0;
+    file = fopen(path, "r+b");
+    if (!file) return 0;
+    if (fseek(file, 0, SEEK_END) || (size = ftell(file)) < 14 ||
+            fseek(file, 0, SEEK_SET) || fread(header, 1, 14, file) != 14 || midi_word(header) != 1) goto done;
+    offset = midi_word(header + 8);
+    if (offset < 14 || (long)offset + 4 > size || fseek(file, offset, SEEK_SET) ||
+            fread(directory, 1, 4, file) != 4) goto done;
+    capacity = midi_word(directory); count = midi_word(directory + 2);
+    if (!capacity || capacity > 100 || count > capacity ||
+            offset + 4UL + capacity * 54UL > (unsigned long)size) goto done;
+    for (i = 0; i < capacity; ++i) {
+        if (fread(entry, 1, 54, file) != 54) goto done;
+        if (!memchr(entry, 0, 16) || strcmp((const char *)entry, name)) continue;
+        data = midi_word(entry + 50) | ((unsigned long)midi_word(entry + 52) << 16);
+        if (!midi_word(entry + 48) || data < offset + 4UL + capacity * 54UL ||
+                data > (unsigned long)size || (unsigned long)size - data < 644) goto done;
+        /* Header bytes 6-7 hold the current setup ID, not its list index. */
+        if (!fseek(file, 6, SEEK_SET) && fwrite(entry + 48, 1, 2, file) == 2) ok = 1;
+        break;
+    }
+done:
+    if (fclose(file)) ok = 0;
+    return ok;
+}
+
 static int equal(const char *a, const char *b)
 {
     while (*a && *b && tolower((unsigned char)*a) == tolower((unsigned char)*b)) { ++a; ++b; }

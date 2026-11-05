@@ -14,7 +14,7 @@ typedef struct {
     const char *id, *label;
     int card, dos;
     unsigned first, count;
-    const char *wave, *fm, *aux;
+    const char *wave, *fm, *aux, *midi_setup;
 } AudioProfile;
 #include "audio_catalog.h"
 
@@ -145,14 +145,17 @@ static void driver_configure(HWND owner, const char *alias)
 {
     HDRVR driver;
     DRVCONFIGINFO info;
+    LRESULT result = DRVCNF_CANCEL;
     driver = OpenDriver(alias, "drivers", 0);
     if (!driver) { explain(owner, "This Windows driver could not be loaded. Install it and restart Windows first."); return; }
     info.dwDCISize = sizeof(info); info.lpszDCISectionName = "drivers"; info.lpszDCIAliasName = alias;
     if (SendDriverMessage(driver, DRV_QUERYCONFIGURE, 0, 0)) {
-        if (pv_backup()) SendDriverMessage(driver, DRV_CONFIGURE, (LPARAM)owner, (LPARAM)&info);
+        if (pv_backup()) result = SendDriverMessage(driver, DRV_CONFIGURE, (LPARAM)owner, (LPARAM)&info);
         else pv_report(owner);
     } else explain(owner, "This driver does not provide a configuration dialog.");
     CloseDriver(driver, 0, 0);
+    if (result == DRVCNF_RESTART)
+        pv_restart_windows(owner, "The audio driver requires a Windows restart to apply its configuration.");
 }
 
 static int ini(const char *file, const char *section, const char *key, const char *value)
@@ -217,7 +220,8 @@ static void install_native(HWND owner, const AudioProfile *profile, const char *
             explain(owner, "A different version of this audio driver is already installed. Use Windows Drivers / Add / Unlisted with the staged PIDOSAUD driver folder to perform a vendor upgrade."); return;
         }
     }
-    sprintf(value, "Install %s for the selected Pi-DOS card?\n\nWindows audio aliases will be updated. Save your work and restart Windows after installation.", profile->label);
+    sprintf(value, "Install %s for the selected Pi-DOS card?\n\nWindows audio aliases will be updated.%s\nSave your work and restart Windows after installation.", profile->label,
+            *profile->fm ? " The card's MIDI setups will replace the current setups; different previous maps are saved as SYSTEM\\MIDIMAP.PVB." : "");
     if (MessageBox(owner, value, "Install selected audio driver", MB_OKCANCEL | MB_ICONQUESTION) != IDOK) return;
     if (!pv_backup()) { pv_report(owner); return; }
     if (!pv_path(stage, pv_windows(), "PVIDTEMP") || !pv_directory(stage)) goto failed;
@@ -262,40 +266,53 @@ static void install_native(HWND owner, const AudioProfile *profile, const char *
         if (!pv_path(from, folder, item->name) || !pv_path(system, pv_system(), item->name)) goto failed;
         if (!pv_same(from, system) && !pv_copy(from, system)) goto failed;
     }
-    /* Keep any existing MIDI maps. The mapper can be edited through its own
-     * dialog; the original map also remains on the staged OEM driver disk. */
-    if (!pv_path(from, folder, "MIDIMAP.CFG") || !pv_path(system, pv_system(), "MIDIMAP.CFG")) goto failed;
-    if (exists(from) && !exists(system) && !pv_copy(from, system)) goto failed;
+    /* Creative's OEM install includes the card's MIDI setups. Stage that file
+     * with the INIs so a failed commit cannot leave maps for a different card. */
+    if (*profile->fm) {
+        if (!pv_path(from, folder, "MIDIMAP.CFG") || !pv_path(to, stage, "MIDIMAP.CFG") ||
+                !pv_copy(from, to) || !pa_midi_default(to, profile->midi_setup) ||
+                !pv_path(system, pv_system(), "MIDIMAP.CFG") ||
+                !pv_path(temporary, pv_system(), "MIDIMAP.PVB")) goto failed;
+        /* Keep the previous different maps even when this card is reinstalled. */
+        if (exists(system) && !pv_same(to, system) && !pv_copy(system, temporary)) goto failed;
+    }
     for (i = 0; i < 3; ++i) {
         pv_path(from, stage, names[i]); WritePrivateProfileString(NULL, NULL, NULL, from);
     }
-    result = pv_commit(pv_windows(), stage);
+    result = *profile->fm ? pv_commit_audio(pv_windows(), pv_system(), stage) : pv_commit(pv_windows(), stage);
     if (result != 1) goto failed;
     for (i = 0; i < 3; ++i) {
         pv_path(from, pv_windows(), names[i]); WritePrivateProfileString(NULL, NULL, NULL, from);
     }
-    explain(owner, "The selected driver is installed. Exit and restart Windows to activate it.\n\nExisting MIDI maps were preserved. After restarting, use Windows MIDI Mapper to choose or create the required FM or external MIDI mapping.");
+    pv_restart_windows(owner, *profile->fm ?
+            "The selected driver and its MIDI setups are installed. All-channel MIDI output is the default.\n\nUse Windows MIDI Mapper to change the setup. Previous different maps are saved as WINDOWS\\SYSTEM\\MIDIMAP.PVB." :
+            "The selected driver is installed. Restart Windows to activate it.");
     return;
 failed:
     explain(owner, "Could not complete audio installation. Exit Windows and run WINDOWS\\PVRESTOR.BAT to restore the saved INIs if needed. Check free disk space and write access.");
 }
 
-/* Open the actual Windows 3.1 Drivers applet, inside this application. */
-static void windows_drivers(HWND owner)
+/* MIDIMAP.DRV exposes a Control Panel applet, not a driver setup dialog. */
+static void windows_applet(HWND owner, const char *name)
 {
     typedef LONG (FAR PASCAL *Applet)(HWND, UINT, LPARAM, LPARAM);
     HINSTANCE library;
     Applet applet;
     char path[144];
-    if (!pv_path(path, pv_system(), "DRIVERS.CPL")) return;
+    if (!pv_path(path, pv_system(), name)) return;
     library = LoadLibrary(path);
-    if (library < HINSTANCE_ERROR) { explain(owner, "Cannot load Windows' DRIVERS.CPL from WINDOWS\\SYSTEM."); return; }
+    if (library < HINSTANCE_ERROR) { explain(owner, "Cannot load the Windows Control Panel applet from WINDOWS\\SYSTEM."); return; }
     applet = (Applet)GetProcAddress(library, "CPLAPPLET");
     if (applet && applet(owner, 1, 0, 0)) {
         if (applet(owner, 2, 0, 0) > 0) { applet(owner, 5, 0, 0); applet(owner, 6, 0, 0); }
         applet(owner, 7, 0, 0);
-    } else explain(owner, "Windows' Drivers Control Panel applet is unavailable.");
+    } else explain(owner, "The Windows Control Panel applet is unavailable.");
     FreeLibrary(library);
+}
+
+static void windows_drivers(HWND owner)
+{
+    windows_applet(owner, "DRIVERS.CPL");
 }
 
 static void audio_info(HWND dialog)
@@ -323,7 +340,7 @@ static void install_selected(HWND dialog)
             }
             explain(dialog, "In Windows Drivers, choose Add, then Ad Lib. Windows may request its installation disks. AdLib provides FM MIDI music only.");
             if (pv_backup()) windows_drivers(dialog); else pv_report(dialog);
-        } else explain(dialog, "No confirmed compatible Windows 3.x driver has been located for this card. Its DOS emulation remains available.");
+        } else explain(dialog, "Select a supported Windows audio driver first.");
         return;
     }
     profile = &audio_profiles[selected];
@@ -345,7 +362,7 @@ static void install_selected(HWND dialog)
 
 BOOL FAR PASCAL __export AudioDialog(HWND dialog, UINT message, WPARAM wparam, LPARAM lparam)
 {
-    unsigned i, selected = 0;
+    unsigned i, selected = (unsigned)-1;
     int card;
     (void)lparam;
     if (message == WM_INITDIALOG) {
@@ -356,19 +373,15 @@ BOOL FAR PASCAL __export AudioDialog(HWND dialog, UINT message, WPARAM wparam, L
             if (card == audio_profiles[i].card) selected = i;
         }
         SendDlgItemMessage(dialog, IDC_AUDIO_CARD, CB_ADDSTRING, 0, (LPARAM)(LPCSTR)"AdLib (Windows driver)");
-        SendDlgItemMessage(dialog, IDC_AUDIO_CARD, CB_ADDSTRING, 0, (LPARAM)(LPCSTR)"Game Blaster / CMS (unavailable)");
-        SendDlgItemMessage(dialog, IDC_AUDIO_CARD, CB_ADDSTRING, 0, (LPARAM)(LPCSTR)"Tandy (unavailable)");
         if (card == CARD_ADLIB) selected = AUDIO_PROFILE_COUNT;
-        if (card == CARD_CMS) selected = AUDIO_PROFILE_COUNT + 1;
-        if (card == CARD_TANDY) selected = AUDIO_PROFILE_COUNT + 2;
         SendDlgItemMessage(dialog, IDC_AUDIO_CARD, CB_SETCURSEL, selected, 0);
         audio_info(dialog); return TRUE;
     }
     if (message == WM_COMMAND) switch (wparam) {
     case IDCANCEL: EndDialog(dialog, 0); return TRUE;
-    case IDC_OPTIONS: pv_options(dialog); audio_info(dialog); return TRUE;
+    case IDC_VOLUME: pv_volume(dialog); return TRUE;
     case IDC_CONFIG_AUDIO: driver_configure(dialog, "wave"); return TRUE;
-    case IDC_MIDI_MAP: driver_configure(dialog, "midimapper"); return TRUE;
+    case IDC_MIDI_MAP: if (pv_backup()) windows_applet(dialog, "MIDIMAP.DRV"); else pv_report(dialog); return TRUE;
     case IDC_WINDOWS_DRIVERS: if (pv_backup()) windows_drivers(dialog); else pv_report(dialog); return TRUE;
     case IDC_INSTALL_AUDIO: install_selected(dialog); return TRUE;
     }

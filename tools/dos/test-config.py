@@ -182,7 +182,8 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
                        b'keyboardlayout=us',b'country=1,437',b'timezone=Asia/Tokyo'):
         assert assignment + b'\r\n' in data
     assert b'# keep\n' in data and b'lfn=true\n' in data and b'cycles=fixed 64180\n' in data
-    for key, value in (('K_RAM',b'3'),('K_GUS_PORT',b'270'),('K_VOL_MASTER',b'201'),
+    for key, value in (('K_RAM',b'3'),('K_GUS_PORT',b'270'),('K_VOL_MASTER',b'101'),
+                       ('K_VOL_CD',b'101:100'),('K_VOL_USB_CD',b'100:101'),
                        ('K_VOL_MASTER',b'50:20 & echo BAD'),('K_TIMEZONE',b'../etc/passwd')):
         assert not set_value(key,value)
     assert editor.cfg_select_cpu(1)  # 286 cannot address 128 MiB
@@ -191,6 +192,8 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert editor.cfg_load(encoded)
     editor.cfg_seed(keys['K_VOL_MASTER'], b'60:70')
     assert get('K_VOL_MASTER') == b'60:70' and not editor.cfg_changed()
+    editor.cfg_seed(keys['K_VOL_MASTER'], b'120:70')
+    assert get('K_VOL_MASTER') == b'100:70' and not editor.cfg_changed()
     assert editor.cfg_save_changes(encoded) and path.read_bytes() == data
 
     # Video selections and the complete Voodoo preset share PIDOS.CFG.
@@ -228,6 +231,13 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
             (name,ctypes.c_char_p) for name in ('label','choices','catalog','help')]
     class GuardedFields(ctypes.Structure):
         _fields_ = [('items',Field * 20),('guard',ctypes.c_uint64)]
+    mixer_fields = (Field * 20)()
+    editor.form_mixer_channels(0xc07)  # Master, SB, FM, CD image, USB CD.
+    mixer_count = editor.form_fields(4, mixer_fields)
+    assert [mixer_fields[i].key for i in range(mixer_count)] == [
+        keys[k] for k in ('K_VOL_MASTER', 'K_VOL_SB', 'K_VOL_FM', 'K_VOL_CD', 'K_VOL_USB_CD')]
+    assert all(mixer_fields[i].choices == b'0|25|50|75|100' for i in range(mixer_count))
+    assert all(b'Covox' not in mixer_fields[i].label for i in range(mixer_count))
     guarded=GuardedFields(); guarded.guard=0x123456789ABCDEF0
     assert editor.form_fields(7, guarded.items) == 16
     assert guarded.guard == 0x123456789ABCDEF0
