@@ -23,6 +23,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "storage.h"
+#include "storage_log.h"
 #include "startup.h"
 #include "diagnostics.h"
 #include "network.h"
@@ -177,12 +178,12 @@ static enum storage mount_data(void)
         delay_ms(100);
     }
     if (!ready) {
-        dprintf(2, "Pi-DOS: PI-DOS device missing after 10 seconds: %s\n", device);
+        pi_dos_storage_error("PI-DOS device missing after 10 seconds: %s", device);
         return NO_STORAGE;
     }
     /* Reject other filesystems before changing or mounting the data partition. */
     if (!pi_dos_is_fat32_data(device)) {
-        dprintf(2, "Pi-DOS: %s is not the expected FAT32 PI-DOS partition\n", device);
+        pi_dos_storage_error("%s is not the expected FAT32 PI-DOS partition", device);
         return NO_STORAGE;
     }
     bool writable = pi_dos_expand_data(device) >= 0;
@@ -194,14 +195,14 @@ static enum storage mount_data(void)
         unlink("/dosdata/SYSTEM/CONTROL.REQ");
         return READ_WRITE;
     }
-    if (writable) dprintf(2, "Pi-DOS: writable PI-DOS mount failed: %s\n", strerror(errno));
-    else dprintf(2, "Pi-DOS: expansion did not complete; trying read-only PI-DOS\n");
+    if (writable) pi_dos_storage_error("Writable PI-DOS mount failed: %s", strerror(errno));
+    else pi_dos_storage_note("Pi-DOS: expansion did not complete; trying read-only PI-DOS\n");
     if (!mount(device, "/dosdata", "vfat", flags | MS_RDONLY,
                "uid=0,gid=0,umask=0022,utf8=1")) {
-        dprintf(2, "Pi-DOS: using PI-DOS read-only\n");
+        pi_dos_storage_note("Pi-DOS: using PI-DOS read-only\n");
         return READ_ONLY;
     }
-    dprintf(2, "Pi-DOS: PI-DOS unavailable: %s\n", strerror(errno));
+    pi_dos_storage_note("Pi-DOS: PI-DOS read-only mount also failed: %s\n", strerror(errno));
     return NO_STORAGE;
 }
 
@@ -307,13 +308,16 @@ static bool make_config(enum storage storage, const char *user_config)
     if (!pi_dos_dos_network(user_config, "/pi-dos/drivez", "/dosdata",
                             storage == READ_WRITE, output)) valid = false;
     if (drive_c) {
-        if (storage == READ_ONLY)
+        if (storage == READ_ONLY) {
             fputs("ECHO WARNING: drive C: is read-only; storage requires recovery.\n", output);
+            pi_dos_storage_recovery(output, "/pi-dos/drivez/SYSTEM/STORAGE.TXT");
+        }
         fputs("IF EXIST C:\\AUTOEXEC.BAT CALL C:\\AUTOEXEC.BAT\n", output);
     } else {
         fputs("ECHO Pi-DOS: persistent DOS storage is unavailable.\n"
               "ECHO Recovery prompt on Z:; C: has not been created in RAM.\n"
               "ECHO Type EXIT to shut down.\n", output);
+        pi_dos_storage_recovery(output, "/pi-dos/drivez/SYSTEM/STORAGE.TXT");
     }
     if (ferror(output)) valid = false;
     if (fclose(output)) valid = false;

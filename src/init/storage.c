@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 /* Original project code; license selection remains pending. */
 #include "storage.h"
+#include "storage_log.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
@@ -8,7 +9,6 @@
 #include <linux/fs.h>
 #include <libfdisk/libfdisk.h>
 #include <parted/parted.h>
-#include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -17,7 +17,6 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -66,50 +65,18 @@ bool pi_dos_is_fat32_data(const char *device)
     return fat32_info(device, &sectors, &cluster);
 }
 
-static int wait_operation(pid_t child, const char *name)
-{
-    /* A failed utility must not leave first boot waiting indefinitely. */
-    struct timespec start, now, pause = {0, 100000000};
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    for (;;) {
-        int status;
-        pid_t result = waitpid(child, &status, WNOHANG);
-        if (result == child) return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
-        if (result < 0 && errno != EINTR) return -1;
-        clock_gettime(CLOCK_MONOTONIC, &now);
-        if (now.tv_sec - start.tv_sec >= 300) {
-            kill(child, SIGKILL);
-            while (waitpid(child, &status, 0) < 0 && errno == EINTR) {}
-            dprintf(2, "Pi-DOS: %s timed out; PI-DOS will not be mounted writable\n", name);
-            return -1;
-        }
-        nanosleep(&pause, NULL);
-    }
-}
-
-static void child_setup(void)
-{
-    sigset_t empty;
-    sigemptyset(&empty);
-    sigprocmask(SIG_SETMASK, &empty, NULL);
-    int null = open("/dev/null", O_RDONLY);
-    if (null >= 0) {
-        dup2(null, STDIN_FILENO);
-        if (null > 2) close(null);
-    }
-    setenv("LC_ALL", "C", 1);
-}
-
 static int check_fat(const char *device)
 {
-    pid_t child = fork();
+    int output;
+    pid_t child = pi_dos_storage_spawn(&output);
     if (child < 0) return -1;
     if (!child) {
-        child_setup();
+        pi_dos_storage_note("Pi-DOS: command: %s -n %s\n", PI_DOS_FSCK_FAT, device);
         execl(PI_DOS_FSCK_FAT, PI_DOS_FSCK_FAT, "-n", device, (char *)NULL);
+        pi_dos_storage_note("Pi-DOS: cannot execute %s: %s\n", PI_DOS_FSCK_FAT, strerror(errno));
         _exit(127);
     }
-    return wait_operation(child, "FAT32 check");
+    return pi_dos_storage_wait(child, "FAT32 check", output);
 }
 
 static PedExceptionOption fat_exception(PedException *exception)
@@ -119,10 +86,10 @@ static PedExceptionOption fat_exception(PedException *exception)
     if (exception->type == PED_EXCEPTION_INFORMATION &&
         (exception->options & PED_EXCEPTION_YES) &&
         strstr(exception->message, "Would you like to use FAT32?")) {
-        dprintf(2, "Pi-DOS: retaining FAT32 during expansion\n");
+        pi_dos_storage_note("Pi-DOS: retaining FAT32 during expansion\n");
         return PED_EXCEPTION_YES;
     }
-    dprintf(2, "Pi-DOS: FAT32 resize: %s\n", exception->message);
+    pi_dos_storage_note("Pi-DOS: FAT32 resize: %s\n", exception->message);
     /* There is no interactive host console. Decline unexpected repairs or
      * format conversions rather than guessing an affirmative response. */
     if (exception->options & PED_EXCEPTION_CANCEL) return PED_EXCEPTION_CANCEL;
@@ -133,10 +100,13 @@ static PedExceptionOption fat_exception(PedException *exception)
 
 static int resize_fat(const char *disk, uint64_t start, uint64_t old_size, uint64_t new_size)
 {
-    pid_t child = fork();
+    int output;
+    pid_t child = pi_dos_storage_spawn(&output);
     if (child < 0) return -1;
     if (!child) {
-        child_setup();
+        pi_dos_storage_note("Pi-DOS: libparted FAT32 resize: %s start=%" PRIu64
+                            " old=%" PRIu64 " new=%" PRIu64 " sectors\n",
+                            disk, start, old_size, new_size);
         ped_exception_set_handler(fat_exception);
         PedDevice *device = ped_device_get(disk);
         PedGeometry *old = device ? ped_geometry_new(device, (PedSector)start, (PedSector)old_size) : NULL;
@@ -149,18 +119,24 @@ static int resize_fat(const char *disk, uint64_t start, uint64_t old_size, uint6
          * FAT32 cluster of padding, but never move the filesystem start. */
         ok = fit && fit->start == (PedSector)start && fit->length <= (PedSector)new_size &&
              new_size - (uint64_t)fit->length < 128;
-        if (!ok) dprintf(2, "Pi-DOS: no supported FAT32 growth geometry\n");
+        if (!ok) pi_dos_storage_note("Pi-DOS: no supported FAT32 growth geometry\n");
         if (ok) ok = ped_file_system_resize(fs, fit, NULL) != 0;
         if (fit) ped_geometry_destroy(fit);
         if (constraint) ped_constraint_destroy(constraint);
-        if (fs && !ped_device_sync(device)) ok = false;
-        if (fs && !ped_file_system_close(fs)) ok = false;
+        if (fs && !ped_device_sync(device)) {
+            pi_dos_storage_note("Pi-DOS: FAT32 device sync failed: %s\n", strerror(errno));
+            ok = false;
+        }
+        if (fs && !ped_file_system_close(fs)) {
+            pi_dos_storage_note("Pi-DOS: FAT32 filesystem close failed: %s\n", strerror(errno));
+            ok = false;
+        }
         if (old) ped_geometry_destroy(old);
         if (grown) ped_geometry_destroy(grown);
         if (device) ped_device_destroy(device);
         _exit(ok ? 0 : 1);
     }
-    return wait_operation(child, "FAT32 expansion");
+    return pi_dos_storage_wait(child, "FAT32 expansion", output);
 }
 
 static bool partition_bytes(const char *device, uint64_t *bytes)
@@ -168,7 +144,9 @@ static bool partition_bytes(const char *device, uint64_t *bytes)
     int fd = open(device, O_RDONLY | O_CLOEXEC);
     if (fd < 0) return false;
     bool ok = ioctl(fd, BLKGETSIZE64, bytes) == 0;
+    int saved_errno = errno;
     close(fd);
+    errno = saved_errno;
     return ok;
 }
 
@@ -201,13 +179,35 @@ int pi_dos_expand_data(const char *device)
     unsigned cluster_size;
     if (!fat32_info(device, &fat_sectors, &cluster_size)) return 0;
     int fd = open(disk, O_RDONLY | O_CLOEXEC);
-    if (fd < 0) return -1;
+    if (fd < 0) {
+        pi_dos_storage_error("Cannot open parent disk %s: %s", disk, strerror(errno));
+        return -1;
+    }
     int sector_size = 0;
-    bool ok = pread(fd, mbr, sizeof(mbr), 0) == sizeof(mbr) &&
-              !ioctl(fd, BLKGETSIZE64, &bytes) &&
-              !ioctl(fd, BLKSSZGET, &sector_size);
+    ssize_t count = pread(fd, mbr, sizeof(mbr), 0);
+    int saved_errno = errno;
+    const char *geometry_stage = "read MBR";
+    bool ok = count == sizeof(mbr);
+    if (!ok && count >= 0) saved_errno = EIO;
+    if (ok) {
+        geometry_stage = "read disk size";
+        ok = !ioctl(fd, BLKGETSIZE64, &bytes);
+        saved_errno = errno;
+    }
+    if (ok) {
+        geometry_stage = "read disk sector size";
+        ok = !ioctl(fd, BLKSSZGET, &sector_size);
+        saved_errno = errno;
+    }
     close(fd);
-    if (!ok || !partition_bytes(device, &part_bytes)) return -1;
+    if (!ok) {
+        pi_dos_storage_error("Cannot %s: %s", geometry_stage, strerror(saved_errno));
+        return -1;
+    }
+    if (!partition_bytes(device, &part_bytes)) {
+        pi_dos_storage_error("Cannot read partition size: %s", strerror(errno));
+        return -1;
+    }
     const unsigned char *boot = mbr + 446, *data = boot + 16;
     uint64_t start = le32(data + 8), sectors = le32(data + 12);
     uint64_t disk_sectors = bytes / 512;
@@ -219,40 +219,62 @@ int pi_dos_expand_data(const char *device)
         le32(boot + 12) != 524288 || data[0] != 0 || data[4] != 0x0c ||
         start != 526336 || !sectors || start + sectors > disk_sectors ||
         part_bytes != sectors * 512 || memcmp(mbr + 478, (unsigned char[32]){0}, 32)) {
-        dprintf(2, "Pi-DOS: automatic PI-DOS expansion skipped: nonstandard disk layout\n");
+        pi_dos_storage_note("Pi-DOS: automatic PI-DOS expansion skipped: nonstandard disk layout\n");
         return 0;
     }
-    if (fat_sectors > sectors) return -1;
+    if (fat_sectors > sectors) {
+        pi_dos_storage_error("FAT32 filesystem is larger than its partition");
+        return -1;
+    }
     uint64_t wanted = disk_sectors - start;
     if (sectors == wanted && wanted - fat_sectors < cluster_size) return 0;
 
-    dprintf(2, "Pi-DOS: expanding PI-DOS to remaining card space (%" PRIu64 " MiB)\n",
+    pi_dos_storage_note("Pi-DOS: expanding PI-DOS to remaining card space (%" PRIu64 " MiB)\n",
             wanted * 512 / 1048576);
+    pi_dos_storage_note("Pi-DOS: disk=%s data=%s start=%" PRIu64
+                        " disk_sectors=%" PRIu64 " partition_sectors=%" PRIu64
+                        " fat_sectors=%" PRIu64 " cluster_sectors=%u target=%" PRIu64 "\n",
+                        disk, device, start, disk_sectors, sectors, fat_sectors, cluster_size, wanted);
+    pi_dos_storage_progress("Checking FAT32 before expansion...");
     int checked = check_fat(device);
     if (checked != 0) {
-        dprintf(2, "Pi-DOS: PI-DOS check failed (%d); expansion stopped\n", checked);
+        pi_dos_storage_error("FAT32 check failed (%d); expansion stopped", checked);
         return -1;
     }
     if (sectors < wanted) {
+        pi_dos_storage_progress("Growing PI-DOS partition...");
         struct fdisk_context *context = fdisk_new_context();
         struct fdisk_partition *partition = NULL;
-        if (!context) return -1;
+        if (!context) {
+            pi_dos_storage_error("Cannot allocate partition growth context");
+            return -1;
+        }
         fdisk_disable_dialogs(context, 1);
+        const char *stage = "open disk";
         int result = fdisk_assign_device(context, disk, 0);
-        if (!result && (!fdisk_is_label(context, DOS) || fdisk_get_sector_size(context) != 512)) result = -1;
-        if (!result) result = fdisk_get_partition(context, 1, &partition);
-        if (!result && (fdisk_partition_get_start(partition) != start ||
-                        fdisk_partition_get_size(partition) != sectors)) result = -1;
-        if (!result) result = fdisk_partition_set_size(partition, wanted);
-        if (!result) result = fdisk_partition_size_explicit(partition, 1);
-        if (!result) result = fdisk_set_partition(context, 1, partition);
-        if (!result) result = fdisk_write_disklabel(context);
-        if (!result) result = fdisk_reread_partition_table(context);
+        if (!result) {
+            stage = "validate disk label";
+            if (!fdisk_is_label(context, DOS) || fdisk_get_sector_size(context) != 512) result = -EINVAL;
+        }
+        if (!result) { stage = "read partition"; result = fdisk_get_partition(context, 1, &partition); }
+        if (!result) {
+            stage = "validate partition geometry";
+            if (fdisk_partition_get_start(partition) != start ||
+                fdisk_partition_get_size(partition) != sectors) result = -EINVAL;
+        }
+        if (!result) { stage = "set size"; result = fdisk_partition_set_size(partition, wanted); }
+        if (!result) { stage = "set explicit size"; result = fdisk_partition_size_explicit(partition, 1); }
+        if (!result) { stage = "set partition"; result = fdisk_set_partition(context, 1, partition); }
+        if (!result) { stage = "write partition table"; result = fdisk_write_disklabel(context); }
+        if (!result) { stage = "reread partition table"; result = fdisk_reread_partition_table(context); }
+        int saved_errno = errno;
         if (partition) fdisk_unref_partition(partition);
         fdisk_deassign_device(context, 0);
         fdisk_unref_context(context);
         if (result) {
-            dprintf(2, "Pi-DOS: PI-DOS partition growth failed; retry on next boot\n");
+            pi_dos_storage_note("Pi-DOS: libfdisk stage=%s result=%d errno=%d (%s)\n",
+                                stage, result, saved_errno, strerror(saved_errno));
+            pi_dos_storage_error("Partition growth failed at %s; retry on next boot", stage);
             return -1;
         }
         /* Rereading can briefly remove and recreate the devtmpfs node. */
@@ -261,14 +283,33 @@ int pi_dos_expand_data(const char *device)
             struct timespec pause = {0, 100000000};
             nanosleep(&pause, NULL);
         }
-        if (part_bytes != wanted * 512) return -1;
+        pi_dos_storage_note("Pi-DOS: kernel partition_bytes=%" PRIu64 " expected=%" PRIu64 "\n",
+                            part_bytes, wanted * 512);
+        if (part_bytes != wanted * 512) {
+            pi_dos_storage_error("Kernel partition size did not update; retry on next boot");
+            return -1;
+        }
     }
-    if (resize_fat(disk, start, fat_sectors, wanted) != 0 ||
-        !fat32_info(device, &fat_sectors, &cluster_size) ||
-        fat_sectors > wanted || wanted - fat_sectors >= cluster_size || check_fat(device) != 0) {
-        dprintf(2, "Pi-DOS: PI-DOS filesystem growth failed; retry on next boot\n");
+    pi_dos_storage_progress("Growing FAT32 filesystem; this may take several minutes...");
+    if (resize_fat(disk, start, fat_sectors, wanted) != 0) {
+        pi_dos_storage_error("FAT32 resize failed; retry on next boot");
         return -1;
     }
-    dprintf(2, "Pi-DOS: PI-DOS expansion complete\n");
+    pi_dos_storage_progress("Verifying expanded FAT32 filesystem...");
+    if (!fat32_info(device, &fat_sectors, &cluster_size)) {
+        pi_dos_storage_error("Cannot validate FAT32 boot sector after expansion");
+        return -1;
+    }
+    pi_dos_storage_note("Pi-DOS: expanded fat_sectors=%" PRIu64 " target=%" PRIu64 "\n", fat_sectors, wanted);
+    if (fat_sectors > wanted || wanted - fat_sectors >= cluster_size) {
+        pi_dos_storage_error("Expanded FAT32 geometry does not match target");
+        return -1;
+    }
+    checked = check_fat(device);
+    if (checked != 0) {
+        pi_dos_storage_error("FAT32 check after expansion failed (%d)", checked);
+        return -1;
+    }
+    pi_dos_storage_progress("PI-DOS expansion complete. Starting DOS...");
     return 1;
 }

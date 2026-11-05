@@ -1251,6 +1251,22 @@ removing the card and safely eject it after copying files from Windows.
 A failed FAT check, resize error or five-minute operation timeout triggers the
 existing read-only/recovery path. No failed expansion causes reformatting.
 
+Only boots needing expansion write progress stages to `/dev/tty1`, using
+best-effort nonblocking output without changing the kernel console or waiting
+for HDMI. Already-expanded boots return before progress or tool capture starts;
+there are no new checks or sleeps on that path. Storage checks, resize geometry,
+five-minute tool timeouts, partition-size polling and retry decisions are unchanged.
+
+On recovery boots, PID 1 generates `Z:\SYSTEM\STORAGE.TXT` in the volatile
+initramfs before the root remount. The DOS prompt shows the failure stage and
+`MORE Z:\SYSTEM\STORAGE.TXT` to inspect it. The report retains the most recent
+64 KiB of storage messages and child stdout/stderr, with tool results, elapsed
+seconds, available geometry and libfdisk failure stage/result/errno. Child pipes
+are drained during the existing wait loop so output does not fill a pipe and
+stall expansion. The report needs no writable C: or BOOT and is lost at reboot;
+copy it to writable external storage before restarting. Capture is automatic for
+storage recovery and does not depend on the optional persistent diagnostic logs.
+
 The production FAT32 resize routine passed native host tests against sparse
 2 GiB and 64 GiB card images. Both kept FAT32 and the then-current DOSDATA label, preserved
 files in `c` and `d` and BOOT data, passed `fsck.fat -n`, and skipped repeat

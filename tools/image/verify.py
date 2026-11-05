@@ -56,6 +56,9 @@ def main():
     with (images / 'rootfs.cpio').open('rb') as stream:
         packed_init = subprocess.check_output(['cpio', '-i', '--to-stdout', '--quiet', 'init'], stdin=stream)
     require(packed_init == (target / 'init').read_bytes(), 'Stale PID 1 in initramfs')
+    require(b'MORE Z:\\SYSTEM\\STORAGE.TXT' in packed_init and
+            b'Pi-DOS storage expansion - do not remove power.' in packed_init,
+            'PID 1 lacks expansion progress or the RAM-only storage recovery report')
     require(b'DOS CPU' in packed_init and b'DOS cycles' not in packed_init,
             'PID 1 must show the DOS CPU model without a cycles row')
     require(b'DOS Voodoo' in packed_init and b'Regional   : Keyboard' in packed_init,
@@ -593,6 +596,7 @@ def main():
                 'power_button_source_sha256': digest(ROOT / 'src/init/power_button.c'),
                 'diagnostics_source_sha256': digest(ROOT / 'src/init/diagnostics.c'),
                 'storage_source_sha256': digest(ROOT / 'src/init/storage.c'),
+                'storage_log_source_sha256': digest(ROOT / 'src/init/storage_log.c'),
                 'editor_sha256': digest(editor),
                 'arj_sha256': digest(arj),
                 'user_config_default_sha256': digest(target / 'pi-dos/PIDOS.CFG'),

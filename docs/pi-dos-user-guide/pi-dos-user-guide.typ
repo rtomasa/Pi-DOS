@@ -234,6 +234,8 @@
 
 #p[#text("Pi-DOS may check and expand its data partition before reaching DOS. Allow it to finish; do not remove power during a storage operation. Expansion is restricted to the expected Pi-DOS layout. Unexpected layouts are left unchanged rather than formatted.")]
 
+#p[#text("Expansion stages are shown on the HDMI text console when available, including retries on later boots until expansion succeeds. Once storage fills the card, normal boots add no expansion messages, checks or waits.")]
+
 #p[#text("The startup table reports the physical board and selected emulated PC hardware. Its CPU, DOS memory, video and sound entries describe the configured environment. They do not mean that those components exist as physical PC expansion cards.")]
 
 #heading(level: 2)[#text("Completing the welcome screens")]#label("h-completing-the-welcome-screens")
@@ -1231,6 +1233,8 @@
 #heading(level: 2)[#text("When C: is read-only")]#label("h-when-c-is-read-only")
 
 #p[#text("A failed writable mount can fall back to read-only C:. Reading programs may still work, but setup, saves, logs and screenshots cannot persist. Pi-DOS does not redirect those writes to RAM.")]
+
+#p[#text("On a storage recovery boot, the prompt shows a short failure reason. Run ")#inline-code("MORE Z:\\SYSTEM\\STORAGE.TXT")#text(" to read the detailed storage report, including available check/resize output, results and geometry. It is a separate RAM-only diagnostic copy that works even when C: is read-only or missing. It retains the most recent 64 KiB of diagnostic output and is lost at shutdown or reboot; copy it to a writable USB drive or photograph the relevant pages before restarting. It does not repair the filesystem or change the existing checks, timeouts or retries.")]
 
 #p[#text("Preserve readable files from another computer and investigate the card's filesystem, capacity and health. A read-only attribute on one file is different from an entirely read-only drive; ATTRIB cannot repair a read-only volume mount.")]
 

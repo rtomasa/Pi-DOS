@@ -113,6 +113,8 @@ On a dual-HDMI board, default HDMI audio uses HDMI0, the connector nearest the U
 
 Pi-DOS may check and expand its data partition before reaching DOS. Allow it to finish; do not remove power during a storage operation. Expansion is restricted to the expected Pi-DOS layout. Unexpected layouts are left unchanged rather than formatted.
 
+Expansion stages are shown on the HDMI text console when available, including retries on later boots until expansion succeeds. Once storage fills the card, normal boots add no expansion messages, checks or waits.
+
 The startup table reports the physical board and selected emulated PC hardware. Its CPU, DOS memory, video and sound entries describe the configured environment. They do not mean that those components exist as physical PC expansion cards.
 
 ### Completing the welcome screens
@@ -1203,6 +1205,8 @@ Pi-DOS does not provide a general filesystem-repair tool or a Linux recovery she
 ### When C: is read-only
 
 A failed writable mount can fall back to read-only C:. Reading programs may still work, but setup, saves, logs and screenshots cannot persist. Pi-DOS does not redirect those writes to RAM.
+
+On a storage recovery boot, the prompt shows a short failure reason. Run `MORE Z:\SYSTEM\STORAGE.TXT` to read the detailed storage report, including available check/resize output, results and geometry. It is a separate RAM-only diagnostic copy that works even when C: is read-only or missing. It retains the most recent 64 KiB of diagnostic output and is lost at shutdown or reboot; copy it to a writable USB drive or photograph the relevant pages before restarting. It does not repair the filesystem or change the existing checks, timeouts or retries.
 
 Preserve readable files from another computer and investigate the card's filesystem, capacity and health. A read-only attribute on one file is different from an entirely read-only drive; ATTRIB cannot repair a read-only volume mount.
 
