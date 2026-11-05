@@ -1,275 +1,264 @@
 # Pi-DOS
 
-Pi-DOS is a dedicated DOS-compatible environment targeting Raspberry Pi models
-with 64-bit Arm processors. A minimal Linux system supplies hardware services;
-the DOSBox-X-derived DOS environment is the only intended user interface.
+Turn a Raspberry Pi into a dedicated DOS computer.
 
-Start with the [complete technical reference and manual foundation](docs/technical-reference.md)
-for the architecture, current features, configuration, hardware integration,
-all 177 NOTES.md feature entries and all 41 development commits through `ff0c194`.
-For normal GitHub synchronization, see the [repository sync procedure](docs/github-sync.md).
+Pi-DOS boots straight to a DOS-compatible command prompt, ready for games,
+applications, programming tools and demoscene productions. It combines the
+DOSBox-X emulation engine with a small Linux system built specifically for the
+Raspberry Pi. You work in DOS from startup to shutdown.
 
-The architecture is Buildroot, an embedded initramfs, a small C PID 1 supervisor,
-native SDL2 KMS/DRM video, ALSA audio, USB input and persistent DOS storage. The
-runtime runs as root. Pi 5 supplied the first hardware validation baseline.
+**Development status:** basic boot and input have been confirmed on Pi 3, Pi 4
+and Pi 5. The shared image targets more boards, but those still need hardware
+testing. Peripheral and application compatibility varies; see
+[what has been verified](docs/pi-dos-user-guide/pi-dos-user-guide.md#appendix-e-compatibility-and-verification-notes).
 
-For Windows setup, mouse capture and physical CD performance, see
-[Windows 3.1 troubleshooting](docs/windows31.md).
-Installers can use writable [C:\CONFIG.SYS](docs/config-sys.md) for supported
-DOS settings and compatible driver loading before AUTOEXEC.
+## The idea
 
-**Status: shared-image boot and keyboard operation are user-confirmed on Pi 3/Pi 5, and on Pi 4 after the firmware correction below. Earlier Pi 5 persistence, reboot and poweroff checks passed; broader hardware validation remains open.**
-The user confirmed boot/input on Pi 3 and Pi 5 with the shared image. On
-25 October 2026, replacing the Pi 4's matched `start4.elf`/`fixup4.dat` pair
-with the pinned May 2026 firmware restored USB input and removed its roughly
-17-second controller timeout. Future builds use that firmware pin; other-board
-coverage still needs hardware validation.
-The SDL2 baseline builds and runs the small DOS fixtures on x86-64 and Pi 5.
-The Pi's ARM64 dynrec execution was confirmed with GDB. Hardware GLES rendering,
-4:3 VGA output and KMS page flips now pass with a small display-dimension patch.
-The virtual Linux keyboard → SDL2 → DOS input test also passes over SSH.
-PC speaker, AdLib and Sound Blaster tones pass the short ALSA HDMI playback
-check; a teardown underrun is recorded separately. Mouse input, audible
-speaker output and broader compatibility validation remain open.
-See the [technical plan](docs/technical-plan.md) and
-[baseline findings and acceptance checklist](docs/phase0.md).
+Pi-DOS is for people who want to sit down at a DOS machine: type commands,
+install software, tune the hardware settings and run a program. The prompt is
+the starting point, and your files and configuration stay on the card.
 
-## Build the shared Raspberry Pi ARM64 image
+Linux handles the Raspberry Pi hardware behind the scenes. There is no desktop,
+login screen or Linux shell in the image. Configuration happens through a DOS
+setup utility and ordinary text files. The aim is a focused, self-contained
+computer that remains useful offline.
 
-Import the required SoundFont/ROM inputs into `assets/midi` before the first
-build; see the [MIDI asset setup guide](assets/midi/README.md).
+Compatibility comes from emulating a PC. Pi-DOS supplies its own DOS-compatible
+environment through DOSBox-X; it does not require an MS-DOS installation.
+CPU speed, memory, video and sound can be adjusted to suit different eras of
+software. Those settings describe the emulated computer, and performance depends
+on the Pi and the program.
+
+## What you can do
+
+- **Run DOS software.** Use familiar commands, COM and EXE programs, BAT scripts,
+  real- and protected-mode applications, and DOS extenders. Windows 3.x can also
+  run with your own installation media and suitable drivers.
+- **Choose the PC hardware.** Select CPU profiles from 286 through Pentium,
+  configure DOS memory, and choose video adapters from CGA and Hercules through
+  VGA and SVGA/VESA. An ARM64 dynamic recompiler speeds up x86 execution.
+- **Use a CRT or LCD.** CRT mode follows DOS resolutions and refresh rates for
+  suitable displays and adapters. LCD mode uses a fixed resolution with 4:3 or
+  original-pixel aspect and optional smoothing. CRT mode is intended for a
+  physical CRT; it does not add scanline effects.
+- **Set up classic sound and music.** PC speaker, AdLib, Sound Blaster and Gravis
+  UltraSound are available. MIDI options include SoundFont synthesis, Munt-based
+  MT-32/CM-32L emulation and external USB MIDI. SoundFonts, ROMs and some patches
+  must be supplied separately. Audio can use HDMI, a supported Pi's analogue jack
+  or a USB DAC.
+- **Keep and move your files.** C: is persistent FAT32 storage, accessible from
+  another computer. Pi-DOS also manages USB data volumes, floppy and optical
+  drives. Mount disk/CD images or run from a ZIP with saves kept in a separate
+  folder beside the archive.
+- **Configure everything from DOS.** `PIDOSCFG` covers CPU, memory, video, sound,
+  mixer, input, networking and system settings. USB controllers, screenshots and
+  shortcuts for switching multi-disc image sets are supported. `EDIT` opens the
+  editor; `DZ` opens Doszip Commander. `DEMOS` and `BENCH` launch the included
+  demoscene and benchmark menus.
+- **Connect older software.** Optional networking provides IPX-over-UDP
+  multiplayer and an emulated NE2000 adapter with NAT or direct wired LAN
+  access. mTCP tools are included. Networking starts disabled; Windows for
+  Workgroups file sharing requires additional software and compatible peers.
+
+These features are implemented to different levels of hardware validation.
+The [user guide](docs/pi-dos-user-guide/pi-dos-user-guide.md) covers their setup
+and limitations.
+
+## System requirements
+
+You need a Raspberry Pi with a **64-bit Arm processor**, a suitable power supply,
+a system card, an HDMI display or suitable adapter, and a wired USB keyboard.
+A USB mouse is useful for applications that support one.
+
+| Board family | Targets of the shared ARM64 image |
+| --- | --- |
+| Pi 2 / Pi 3 | Pi 2B revision 1.2; Pi 3B, 3B+ and 3A+ |
+| Zero | Zero 2 W |
+| Pi 4 | Pi 4B and Pi 400 |
+| Pi 5 | Pi 5, Pi 500 and Pi 500+ |
+| Compute Modules | CM0, CM3/3+, CM4/4S and CM5/Lite, with suitable carrier and boot hardware |
+
+Pi 1, the original Zero/Zero W and Pi 2B revision 1.1 cannot run this image.
+Zero 2 W and Compute Modules need suitable USB host adapters or carrier hardware.
+The board list describes build targets; confirmed basic boot/input currently
+covers Pi 3, Pi 4 with corrected firmware, and Pi 5.
+
+Choose a card larger than the generated image, with enough extra space for your
+software and disk images. The `PI-DOS` data partition is designed to expand into
+remaining card space on first boot. There is no separately established minimum
+physical RAM figure; the default **16 MiB of emulated DOS memory** is separate
+from the Pi's own RAM.
+
+Wired Ethernet is optional, for networking and automatic time synchronization.
+Wi-Fi and Bluetooth are not configured. This image uses HDMI output; DSI and
+composite displays are outside its current scope. CRT operation requires a
+monitor and adapter that accept the selected timings.
+
+## Build the SD-card image
+
+### 1. Prepare a Linux build host
+
+Build as an ordinary user, from the repository root. You need **Python 3.12 or
+newer**, a C/C++ compiler, GNU Make, Bash and the usual Buildroot host tools.
+`bsdtar` is also required to extract the bundled benchmark assets.
+
+On Debian/Ubuntu, the host packages include:
+
+```sh
+sudo apt-get update
+sudo apt-get install build-essential bash bc bison bzip2 ca-certificates \
+  cpio file flex git libarchive-tools libncurses-dev libssl-dev patch perl \
+  pkg-config python3 rsync unzip wget xz-utils
+python3 --version
+```
+
+Check that the reported Python version is at least 3.12; older distributions may
+need a newer Python installation available as `python3`. Buildroot checks its
+remaining host dependencies when the build starts. Internet access is needed
+for the initial source, toolchain and asset downloads. Sources are cached under
+`dl/`, and build products stay under `output/`.
+
+### 2. Supply the MIDI assets
+
+The current image build requires the SoundFonts and MT-32/CM-32L ROMs listed in
+[the MIDI asset guide](assets/midi/README.md). They are not included in Git.
+Prepare a ScummVM-style asset directory containing the matching `soundfonts/`
+and `extra/` files, then import them:
+
+```sh
+python3 tools/dos/midi-assets.py --source /path/to/scummvm
+```
+
+Replace the path with your own asset directory. The importer checks file sizes
+and hashes and stages the files in `assets/midi/`. If they are already staged,
+verify them with:
+
+```sh
+python3 tools/dos/midi-assets.py
+```
+
+These inputs are required even if you intend to disable MIDI at runtime.
+
+### 3. Configure and build
+
+From the repository root:
 
 ```sh
 make image-config
 JOBS=4 make image
 ```
 
-For troubleshooting without a serial adapter, run `JOBS=4 make image-diagnostic`.
-The separate `pi-dos-arm64-diagnostic-sdcard.img` enables all four logs in
-`C:\SYSTEM`: `BOOT.LOG`, `RUNTIME.LOG`, `NETWORK.LOG` and `VIDEO.LOG`.
-On either image, edit `C:\SYSTEM\PIDOS.CFG` from DOS and set `diagnostics=true`
-or `diagnostics=false` under `[pidos]`, then reboot. Normal images default to
-`false`. Logs are replaced on each enabled boot. See the
-[diagnostic procedure](docs/buildroot-pi5.md#diagnostic-image-with-logs-on-c).
+`image-config` selects the shared Raspberry Pi ARM64 configuration. The build
+fetches the pinned cross-toolchain and sources, builds the kernel and runtime,
+packages the DOS tools and assets, and checks the resulting image. You do not
+need to install an ARM cross-compiler or a DOS compiler separately.
 
-The initial 769 MiB development image is
-`output/buildroot-arm64/images/pi-dos-arm64-sdcard.img`. It contains an ARM64 kernel
-with embedded initramfs, custom C PID 1, the SDL2 DOS runtime, FAT32 BOOT and
-FAT32 PI-DOS partitions for direct access from modern Windows. The generated image passed static checks for its
-partitions, required kernel/SDL backends, runtime dependencies and absence of
-a Linux shell or conventional init system.
+The SD-card image is written to:
 
-The shared image targets Pi 2B revision 1.2, Pi 3B/3B+/3A+, Zero 2 W,
-Pi 4B/400, Pi 5/500/500+, and the corresponding 64-bit Compute Modules
-(CM0, CM3/3+, CM4/4S and CM5/Lite with suitable carrier hardware). Original
-Pi 1, Zero/Zero W and Pi 2B revision 1.1 are 32-bit and cannot run it.
-The build uses a Cortex-A53 baseline, a common 4 KiB-page kernel, per-model
-device trees and boot firmware. Hardware validation of this shared image is
-still required; the earlier Pi 5 results do not establish other-model support.
-Use the HDMI output and wired USB input; Zero/Compute Modules need suitable
-USB host adapters/carriers. Multi-model builds use a fresh `output/buildroot-arm64`
-directory, without reusing Cortex-A76 binaries from `output/buildroot-pi5`.
-
-The `PI-DOS` data partition automatically expands to the remaining SD-card space before DOS starts
-on first boot. Subsequent boots skip expansion once the partition and filesystem
-fill the card. The FAT32 resizer passed host tests on sparse 2 GiB and 64 GiB
-card images; this updated image still needs ARM64 and physical SD-card testing.
-Storage detection requires the `PI-DOS` volume label; existing FAT32 cards
-labelled `DOSDATA` must be relabelled before using the updated system.
-
-The default DOS PATH includes all bundled utility directories.
-DOS volume labels default to `SYSTEM` for C: and `PI-DOS` for Z:.
-C: uses the data partition's available space. D: is reserved for an automatic
-USB optical drive; CD/DVD/Blu-ray units can read regular CDs, including digital
-CD audio and mixed-mode game discs. C: exposes the PI-DOS volume root directly;
-`SYSTEM`, `PROGRAMS`, `GAMES`, `DEMOS`, `DOCS` and `TEMP` are at that root.
-Host checks pass; physical optical-drive validation is pending. See
-[USB CD-ROM support](docs/buildroot-pi5.md#usb-optical-drive-d).
-USB floppy drives automatically use `A:`, including when connected after boot.
-Use `DIR A:`, `COPY`, or `FORMAT A:` normally; disk changes and write protection
-are handled on access. Reads are batched by track. Physical drive validation is pending;
-see [USB floppy support](docs/buildroot-pi5.md#usb-floppy-drive-a).
-The image includes a personalized editor at `C:\PROGRAMS\TOOLS\EDIT.COM`; this
-writable copy takes priority over the bundled editor and retains saved preferences.
-Edit `C:\SYSTEM\PIDOS.CFG` and reboot to change emulator settings persistently.
-Fresh installations first offer keyboard layout, DOS country, timezone and
-CRT/LCD monitor settings. Save and reboot applies them, then a short keyboard
-test and local clock review completes setup. Skip keeps the saved defaults.
-Existing installations keep their normal startup. See [first-boot setup](src/doscfg/README.md#first-boot-setup).
-Fresh images select a CPU profile before the first DOS session: 386DX 33 MHz
-on Pi 2/3 families, 486DX2 66 MHz on Pi 4 families, and Pentium 120 MHz on Pi 5 families.
-The CPU tab marks all three board defaults and recommends the detected board's
-profile; Restore defaults selects that profile, pending Save and reboot.
-Existing CPU settings survive updates and moving the card between boards.
-Other defaults are S3 Trio64 video, Sound Blaster Pro 2 and the Roland
-SC-55 SoundFont MIDI profile.
-PIDOSCFG's System page selects CRT (the default) or LCD output.
-CRT follows DOS video modes. LCD offers manual resolutions (1024x768 by default),
-4:3 or Original pixels aspect, optional SDL2 linear filtering, and an optional host
-CPU/temperature overlay (both off by default). The overlay is independent of logs.
-Save and reboot to apply. Existing configurations keep their display behavior
-until a monitor type is selected. See the [monitor controls](src/doscfg/README.md#monitor-output).
-PIDOSCFG's Network tab configures IPX-over-UDP multiplayer, NE2000 with SLIRP
-TCP/IP or PCAP direct wired LAN, and Windows for Workgroups startup. Networking
-defaults to disabled. mTCP tools and source are included on `Z:\NETWORK\MTCP`.
-Use PCAP with Windows' own NE2000 driver for real LAN file sharing; Windows
-media and compatible peer file-sharing protocols are required. See the
-[networking manual](docs/networking.txt). Physical Pi/WfW acceptance is pending.
-Type `VIDEOMOD /P` to list host display and DOS BIOS/VESA modes a screen at a time.
-Use `/HOST` or `/DOS` to list either group, or `VIDEOMOD /?` for help.
-The same file accepts `[pidos]` options, including `timezone=Europe/Madrid` for
-local time with automatic daylight saving.
-The default keyboard layout is Spanish (`keyboardlayout=sp` under `[dos]`).
-PIDOSCFG's Input tab selects DOS joystick hardware, automatic/raw controller
-layout, stick/D-pad controls, button order and dead zone. Controller slots survive
-other-device removal and accept connections after boot, without mapper files.
-The System tab configures clean reboot/poweroff, pause, screenshot and image-disc
-switching shortcuts. Ctrl+Alt+Print Screen saves PNGs in `C:\SYSTEM\CAPTURES`;
-Ctrl+Alt+F4 cycles mounted CD image sets and Ctrl+Alt+F5 cycles floppy image sets.
-Load the images together with `IMGMOUNT`. Save and reboot to apply shortcut changes.
-Host virtual-controller checks pass; physical controller hotplug and
-in-game calibration still need validation. See [input options](src/doscfg/README.md#input-and-controllers).
-The boot summary displays the system date and local time;
-network time synchronization may correct the clock after startup.
-Edit `C:\AUTOEXEC.BAT` to customize environment variables, PATH or programs run
-after standard startup. A minimal template is created only when missing;
-existing files are preserved. `C:\README.TXT` explains both configuration files.
-Pi-DOS owns C: and Z:. `MOUNT` lists drives and can eject removable drives;
-additional directory mounts and `SUBST` mappings are disabled in appliance mode.
-Use `IMGMOUNT` with a free letter for disk or CD images. The old `c/` layout is
-not migrated automatically; its contents must be placed at the volume root.
-See [managed drives](docs/buildroot-pi5.md#managed-drive-assignments-and-the-c-root).
-Use `ZIPMOUNT E C:\GAMES\DOOM.ZIP` with a free letter to run files directly
-from a ZIP. Changes persist in the ordinary sibling folder `DOOM.PFS`; the
-archive stays unchanged. Add `-ro` to disable writes, and use `ZIPMOUNT E -u`
-to unmount. See [ZIP drives](docs/buildroot-pi5.md#zip-archive-drives).
-The shell shows uppercase 8.3 names by default; `DIR /-Z` shows long names.
-Original filenames on disk and long-filename access are preserved.
-The original Z: utility layout is retained, with the supplied ARJ at `Z:\BIN\ARJ.EXE`.
-Applications live under `C:\PROGRAMS`. Doszip Commander is included in
-`C:\PROGRAMS\DOSZIP`; type `DZ` to open its two-panel file manager.
-The standard user folders are `C:\GAMES`, `C:\DEMOS`, `C:\DOCS` and `C:\TEMP`.
-Type `DEMOS` for a simple numbered demoscene menu in `C:\DEMOS`: Second Reality,
-Unreal, Panic, Crystal Dream I/II, Stars: Wonders of the World, Caero, Inside,
-and the short Fishtro intro. Press `H` for sound/setup notes and `Q` to exit.
-Original releases and documentation are retained; the menu uses the current
-emulator settings. Physical Pi playback and synchronization remain unverified.
-Run `make demos` to create `output/pi-dos-demos.zip` for an existing card;
-copy its `DEMOS` folder and `SYSTEM\DEMOS.BAT` to the PI-DOS partition root,
-merging with the existing `SYSTEM` directory. Future image builds include the
-pack automatically. Sources and hashes are in `configs/demo-assets.json`;
-see the [pack guide](br2-external/board/raspberrypi/dos/demos/README.TXT).
-Type `BENCH` for the benchmark menu in `C:\SYSTEM\BENCH`: 3DBench 1.0c,
-Chris's 3D Benchmark and PC Player at VGA/SVGA resolutions, Doom shareware
-at minimum/maximum detail with FPS calculation, and Quake shareware at
-320x200, 360x480 and 640x480. The menu uses the current CPU/video settings;
-record those settings when comparing scores. The pack retains original game
-documentation/installers and source provenance. Physical Pi acceptance remains
-pending. See the [benchmark pack documentation](br2-external/board/raspberrypi/dos/bench/README.TXT).
-Writable boots set both `TEMP` and `TMP` to `C:\TEMP`.
-SDL2 KMS/DRM teardown keeps the host mouse pointer hidden during reboot and poweroff;
-visual confirmation on hardware is pending.
-
-Moving from the old ext4 image requires backing up `c` and `d`, flashing the
-new image, and restoring files into the PI-DOS volume root (including any former D: files).
-A kernel-only update does not convert
-the filesystem. The build does not flash any physical card.
-
-This is the first operating-system packaging work beyond the earlier native
-DOSBox-X baseline. Boot to the DOS prompt and wired USB keyboard input,
-including reconnection, are confirmed on the test Pi. The user also confirmed
-C: file persistence across `REBOOT` and successful `POWEROFF`. The ReplayOS
-development Pi has not been flashed or rebooted. This image has no SSH server.
-Mouse validation and the audio teardown underrun are deferred as requested.
-See [image build details and the first boot procedure](docs/buildroot-pi5.md).
-
-## Build the native baseline
-
-On a native Linux development host, install Python 3.12+, a C/C++ compiler,
-GNU Make, GNU Patch, Autoconf, Automake, pkg-config, CMake and Ninja, plus development
-headers/libraries for ALSA, libdrm, GBM, EGL and OpenGL ES. Additional dependencies
-reported by the pinned DOSBox-X configuration may be needed.
-Image packaging also needs `bsdtar` (libarchive tools) to read the original
-Quake shareware installer without executing it. Benchmark downloads are
-SHA-256 pinned in `configs/benchmark-assets.json` and cached under `dl/`.
-
-```sh
-make fetch
-make sdl2   # independently build the platform dependency
-make phase0
-make smoke  # minimal headless DOS shell startup check
-make smoke-programs  # COM/EXE/BAT and basic file operations; requires NASM
-# On the Pi over SSH, with an unused connected HDMI display:
-make smoke-graphics  # GPU readback, color/aspect checks and KMS presentation
-make smoke-keyboard  # root: temporary uinput keyboard, BIOS/DOS key validation
-make smoke-audio  # DOS tones, ALSA WAV capture and real HDMI playback status
-# With archives already cached:
-bash tools/phase0/build.sh --offline
+```text
+output/buildroot-arm64/images/pi-dos-arm64-sdcard.img
 ```
 
-Use `JOBS=2 make phase0` on a memory-constrained host. The workflow builds a private
-SDL2 and then configures DOSBox-X with `--enable-sdl2`. It does not install system
-packages or write outside this project. Ordinary development builds do not need
-root. The eventual appliance runtime is root-only.
+The main build log is `output/logs/buildroot-arm64.log`; the image check report is
+`output/buildroot-arm64/images/pi-dos-image-validation.json`.
 
-Sources and SHA-256 checksums are in [sources.lock.json](sources.lock.json).
-The selected SDL2 is **native SDL 2.32.10**, built from the upstream SDL repository.
-It does not use `sdl2-compat` or SDL3.
-These pins are candidates until the hardware acceptance gates pass. Source
-pinning alone does not establish bit-for-bit build reproducibility. The build
-also applies the tracked [DOSBox-X patch series](patches/dosbox-x/README.md).
+To resume a build after fixing a dependency or download problem, rerun
+`JOBS=4 make image`. Use a lower value, such as `JOBS=2`, if the host is short on
+memory. Reapplying `make image-config` resets the configuration to the tracked
+defaults, so it is not needed for an ordinary incremental build.
 
-SDL3 is deferred until DOSBox-X has a complete, validated native SDL3 port.
-The [earlier SDL3 findings](docs/phase0-sdl3-history.md) are retained for that
-future upgrade. See the [current findings](docs/phase0.md) for build results
-and remaining acceptance work, including the [Pi 5 validation report](docs/pi5-validation.md).
+For boot troubleshooting, build the diagnostic variant:
 
-Generated paths:
+```sh
+JOBS=4 make image-diagnostic
+```
 
-| Path | Contents |
+It produces `pi-dos-arm64-diagnostic-sdcard.img` in the same image directory,
+with boot, runtime, network and video logs enabled under `C:\SYSTEM`.
+See the [image build guide](docs/buildroot-pi5.md) for configuration details,
+component builds and diagnostics.
+
+### 4. Write the card and boot
+
+1. Back up the destination card. Use an image-writing utility to write the
+   generated `.img` file to the **whole card**. Writing it replaces existing data;
+   running `make image` itself does not touch a physical card.
+2. Safely eject the card, insert it into the Pi, and connect the display and USB
+   keyboard. Use HDMI0 on dual-HDMI boards when relying on default HDMI audio.
+3. Apply power and allow the first-boot storage preparation to finish.
+4. In the welcome screen, select your keyboard, country, timezone and CRT/LCD
+   profile. Press **F2** to save and reboot, then complete the keyboard and clock
+   review to reach the DOS prompt.
+
+Fresh images default to a Spanish keyboard, Spain, `Europe/Madrid` and CRT
+output. Choose LCD for a flat panel and select a compatible resolution. If you
+skip setup, the saved defaults remain active. You can reopen it later with
+`PIDOSCFG /FIRSTBOOT`.
+
+## Everyday use
+
+After a clean `POWEROFF`, move the card to another computer and copy programs
+into the FAT32 partition labelled `PI-DOS`. Its root becomes `C:\`:
+
+| DOS path | Purpose |
 | --- | --- |
-| `dl/` | Checksum-verified source archives |
-| `output/src/` | Extracted upstream sources and generated Autotools files |
-| `output/host-sdl2/` | Private native SDL2 installation |
-| `output/build/sdl2/` | Native SDL2 build |
-| `output/build/dosbox-x-sdl2/` | Native DOSBox-X build |
-| `output/logs/` | Configuration and compilation logs |
+| `C:\GAMES` | Games |
+| `C:\PROGRAMS` | Applications and tools |
+| `C:\DEMOS` | Demoscene pack |
+| `C:\DOCS` | Manuals and your documents |
+| `C:\SYSTEM` | Pi-DOS configuration and system files |
+| `C:\TEMP` | Temporary files |
 
-An x86-64 build can check native SDL2 integration. Native ARM64 execution and
-dynrec have now passed the small fixtures on Pi 5; Raspberry Pi display, input,
-audio and boot behavior require separate hardware validation.
+Keep the partition's `PI-DOS` label: the system uses it to find your files.
+Z: contains the built-in utilities. USB floppy drives use A:, optical drives
+use D:, and supported USB data volumes receive free letters starting at E:.
+`IMGMOUNT` handles disk/CD images; `ZIPMOUNT` handles ZIP archives.
 
-For the immediate startup check, run `make smoke` from this directory. It uses
-SDL2 dummy video/audio and default settings, mounts a fresh scratch directory as
-`C:`, writes a result from the DOS shell and exits. A visible DOS window is not
-expected. Running the binary without these options can load a personal DOSBox-X
-configuration requesting unavailable X11 or Wayland backends.
+Type `PIDOSCFG` to change hardware and system settings, save, then use `REBOOT`
+to apply them. Advanced settings live in `C:\SYSTEM\PIDOS.CFG`. Put your own
+startup commands in `C:\AUTOEXEC.BAT`; supported DOS directives and compatible
+drivers can use `C:\CONFIG.SYS`. Use `POWEROFF` for a clean shutdown before
+removing power or the card.
 
-After `make smoke` passes, run `make smoke-programs`. It assembles two original
-DOS fixtures with NASM, then runs them through a BAT script using the normal
-interpreter. It checks COM execution, an MZ EXE relocation, child exit codes,
-batch variable expansion and DIR/CD/COPY. Results and logs stay in a fresh
-directory under `output/smoke/`. Both headless checks have passed on x86-64 and
-Pi 5 ARM64. To repeat the Pi's dynrec execution check with GDB:
+## How the pieces fit together
 
-```sh
-CPU_CORE=dynamic_rec VERIFY_DYNREC=1 make smoke-programs
-```
+| Building block | Its job |
+| --- | --- |
+| **Buildroot** | Builds and packages the small Linux system, libraries, firmware and bootable image. Board-specific recipes live in `br2-external/`. |
+| **Linux kernel and initramfs** | Supply the Pi's hardware drivers and an in-memory system filesystem. The kernel contains the initramfs; there is no separate Linux root partition. |
+| **Pi-DOS supervisor** | The C program in `src/init/` starts as PID 1, discovers storage and devices, reads configuration, launches the DOS runtime and synchronizes storage during reboot/shutdown. |
+| **DOSBox-X-derived runtime** | Emulates the x86 CPU, PC hardware, BIOS and DOS services. Pi-DOS maintains its integration changes as a patch series in `patches/dosbox-x/`. |
+| **SDL2 and hardware libraries** | Connect the runtime to Linux input, direct DRM/KMS video with OpenGL ES presentation, and ALSA audio. X11, Wayland and an audio server are unnecessary. |
+| **Persistent DOS storage** | A separate FAT32 partition holds C:, configuration and user files, apart from the system loaded into memory. |
 
-This requires GDB and debug symbols. The debugger breakpoints are tied to the
-pinned DOSBox-X revision; see the Pi 5 report for details and scope.
+At boot, the Pi firmware loads the kernel from the `BOOT` partition. The kernel
+starts the supervisor, which mounts the `PI-DOS` data partition and launches the
+emulator with the saved settings. DOS programs see emulated PC devices; Linux
+and SDL2 translate their display, sound and input into real Pi hardware access.
+The supervisor remains in charge of the runtime and clean shutdown.
 
-The Pi is a shared ReplayOS development environment accessed through SSH only.
-Pi tests use scripted commands and automatic exit; local console interaction is
-not required. The [graphics check](docs/pi5-graphics-validation.md) captured the
-VGA pattern from the V3D GPU and observed completed KMS flips. It exits
-automatically and refuses to run when DRM card devices are already in use.
-The [keyboard check](docs/pi5-keyboard-validation.md) verifies BIOS scan codes,
-characters and Shift handling through Linux uinput and SDL2 evdev, then removes
-its virtual device. The [audio check](docs/pi5-audio-validation.md) validates
-three DOS tones in an ALSA capture and advancing real HDMI hardware playback.
-Physical input and audible speaker output still need separate evidence.
+## Documentation and development
 
-No proprietary DOS binaries or applications are included. Project licensing is
-not yet selected; upstream component notices remain applicable. See
-[source provenance](LICENSES/README.md).
+- [User guide](docs/pi-dos-user-guide/pi-dos-user-guide.md) — installation,
+  commands, configuration, storage and troubleshooting.
+- [Image build guide](docs/buildroot-pi5.md) — image layout, diagnostics and
+  hardware integration; the filename predates the shared ARM64 image.
+- [Setup utility](src/doscfg/README.md) — settings, CPU profiles and rebuilding
+  `PIDOSCFG` with Open Watcom.
+- [Networking](docs/networking.txt), [CONFIG.SYS](docs/config-sys.md) and
+  [Windows 3.1](docs/windows31.md) — detailed setup and compatibility notes.
+- [Technical reference](docs/technical-reference.md) — deeper architecture,
+  implementation details and recorded validation.
+
+For runtime development on Linux, `make phase0` builds a native SDL2/DOSBox-X
+baseline without creating an SD image. Its host dependencies and checks are
+covered in the [baseline findings](docs/phase0.md). `make help` lists the available
+build targets.
+
+## Licensing
+
+A project-wide license for original Pi-DOS code has not yet been selected.
+Upstream components and bundled software retain their own licenses and notices.
+Generated images are development artifacts; public distribution still requires
+completion of the component and asset license review. See
+[source provenance and licensing](LICENSES/README.md).

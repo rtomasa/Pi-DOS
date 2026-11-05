@@ -17,3 +17,4 @@ __pycache__/
 .DS_Store
 *.swp
 docs/pi-dos-user-guide/pi-dos-user-guide.pdf
+NOTES.md
