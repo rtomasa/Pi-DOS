@@ -113,8 +113,6 @@ def build_preflight(drivers, jobs):
         raise RuntimeError('Python 3.12 or newer is required.')
     if jobs < 1:
         raise RuntimeError('JOBS must be positive.')
-    if not drivers:
-        raise RuntimeError('Supply --drivers /path/to/DRIVERS (containing S3/ and ET4/).')
     for adapter in ('S3', 'ET4'):
         if not (drivers / adapter / 'OEMSETUP.INF').is_file():
             raise RuntimeError(f'Missing {drivers / adapter / "OEMSETUP.INF"}')
@@ -163,8 +161,10 @@ def build_bundle(commit, drivers, jobs):
         run(*command, cwd=source, env=environment)
 
     build('bash', 'tools/dos/build.sh')
-    build(sys.executable, 'tools/windows/package-audio.py', '--fetch')
-    build('bash', 'tools/windows/build-video.sh', drivers)
+    # Use the committed copy inside the snapshot, rather than the live checkout.
+    bundled_drivers = ROOT / 'assets/windows-drivers/video'
+    driver_source = source / 'assets/windows-drivers/video' if drivers == bundled_drivers.resolve() else drivers
+    build('bash', 'tools/windows/build-video.sh', driver_source)
     build('bash', 'tools/image/build.sh', 'configure')
     build('bash', 'tools/image/build.sh', 'build')  # Includes image verification.
     build(sys.executable, 'docs/pi-dos-user-guide/build-guide.py')
@@ -268,7 +268,8 @@ def upload_bundle(repo, info):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--drivers', type=Path, help='extracted vendor DRIVERS directory with S3/ and ET4/')
+    parser.add_argument('--drivers', type=Path, default=ROOT / 'assets/windows-drivers/video',
+                        help='optional override for bundled S3/ and ET4/ drivers')
     parser.add_argument('--jobs', type=int, default=int(os.environ.get('JOBS', '4')))
     parser.add_argument('--repo', help='GitHub OWNER/REPO (default: origin)')
     mode = parser.add_mutually_exclusive_group()
@@ -289,7 +290,7 @@ def main():
         if args.upload_only:
             info = verify_bundle(OUTPUT / 'current')
         else:
-            drivers = args.drivers.expanduser().resolve() if args.drivers else None
+            drivers = args.drivers.expanduser().resolve()
             build_preflight(drivers, args.jobs)
             info = build_bundle(commit, drivers, args.jobs)
         if uploading:

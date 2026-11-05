@@ -1,14 +1,16 @@
 .PHONY: help fetch sdl2 phase0 smoke smoke-programs smoke-graphics smoke-keyboard smoke-audio
 
+DRIVERS ?= assets/windows-drivers/video
+
 help:
 	@echo 'make image-config - configure the shared Raspberry Pi ARM64 image'
 	@echo 'make image - build the Raspberry Pi ARM64 SD image (JOBS=4 by default)'
 	@echo 'make image-diagnostic - build an image with boot/runtime/network/video logs on C:'
 	@echo 'make dos-config - rebuild PIDOSCFG.EXE (requires Open Watcom)'
-	@echo 'make windows-video DRIVERS=/path/to/DRIVERS - build the Win3.1 S3/ET4000 installer'
-	@echo 'make windows-drivers DRIVERS=/path/to/DRIVERS - build unified Win3.1 driver/configuration app'
-	@echo 'make release DRIVERS=/path/to/DRIVERS - build fresh image.xz, guide PDF and Windows drivers locally'
-	@echo 'make release-upload DRIVERS=/path/to/DRIVERS - build and update the GitHub rolling release'
+	@echo 'make windows-video - build the Win3.1 S3/ET4000 installer from bundled drivers'
+	@echo 'make windows-drivers - build unified Win3.1 driver/configuration app'
+	@echo 'make release - build fresh image.xz, guide PDF and Windows drivers locally'
+	@echo 'make release-upload - build and update the GitHub rolling release'
 	@echo 'make release-upload-only - upload/retry the last verified release bundle'
 	@echo 'make demos - fetch and package the curated DOS demoscene pack with text menu'
 	@echo 'make fetch   - fetch and verify pinned Phase 0 sources'

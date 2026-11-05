@@ -52,6 +52,16 @@ included beside the binaries as `COPYING.TXT` and `SOURCE.ZIP`; `PACKAGE.TXT`
 retains package provenance. Windows for Workgroups, Microsoft TCP/IP-32 and
 Novell ODI/IPX drivers are user-supplied and are not included in the image.
 
+Windows 3.1 video driver inputs and five original audio driver archives are
+tracked under `assets/windows-drivers/` so building `PIDOSDRV.ZIP` does not depend
+on external local files. `configs/windows-video.json` inventories the retained
+S3/ET4000 files; `configs/windows-audio.json` records the audio archives, upstream
+URLs and hashes. Available vendor README, INF and VERSION files are retained.
+The video payloads were recovered from the previous package staging tree and
+match its recorded input hashes; complete original video archives were no
+longer available. These copies retain vendor copyrights; their inclusion does
+not establish redistribution permission or close the existing release review.
+
 The local development image installs a selected benchmark pack under
 `C:\SYSTEM\BENCH`. Its upstream compilation is Phil's DOS Benchmark Pack v1.6;
 archive URLs and SHA-256 hashes are pinned in `configs/benchmark-assets.json`.

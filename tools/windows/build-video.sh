@@ -4,10 +4,11 @@ set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)
 watcom_dir=${WATCOM:-"$root/output/tools/openwatcom"}
 out="$root/output/windows-video"
-if [[ $# -ne 1 || -z "$1" ]]; then
-    echo "Usage: $0 /path/to/DRIVERS (containing S3/ and ET4/)" >&2
+if [[ $# -gt 1 ]]; then
+    echo "Usage: $0 [/path/to/DRIVERS] (defaults to bundled S3/ and ET4/)" >&2
     exit 2
 fi
+drivers=${1:-"$root/assets/windows-drivers/video"}
 for tool in wcc wcl wlink wrc; do
     [[ -x "$watcom_dir/binl64/$tool" ]] || {
         echo "Open Watcom not found. Set WATCOM to its installation directory." >&2
@@ -17,7 +18,7 @@ done
 export WATCOM="$watcom_dir"
 export PATH="$watcom_dir/binl64:$PATH"
 export INCLUDE="$watcom_dir/h/win:$watcom_dir/h"
-python3 "$root/tools/windows/package-video.py" "$1" --output "$out"
+python3 "$root/tools/windows/package-video.py" "$drivers" --output "$out"
 python3 "$root/tools/windows/package-audio.py" --output "$out"
 cd "$out"
 python3 "$root/tools/windows/make-icon.py" "$out/video.ico"

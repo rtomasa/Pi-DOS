@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare user-supplied Win3.1 S3/ET4000 drivers for the Pi-DOS installer."""
+"""Prepare bundled Win3.1 S3/ET4000 drivers for the Pi-DOS installer."""
 
 import argparse
 import csv
@@ -11,7 +11,16 @@ import shutil
 import struct
 
 ROOT = Path(__file__).resolve().parents[2]
+DRIVERS = ROOT / 'assets/windows-drivers/video'
 SZDD = bytes.fromhex("535a444488f02733")
+
+
+def verify_bundled_drivers():
+    manifest = json.loads((ROOT / 'configs/windows-video.json').read_text())
+    for name, expected in manifest['files'].items():
+        path = DRIVERS / name
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise ValueError(f'Missing or changed bundled video driver: {name}; restore it from Git.')
 
 
 def expand(data):
@@ -259,10 +268,13 @@ def make_catalog(source, output, allowed):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("drivers", type=Path, help="Directory containing S3 and ET4")
+    parser.add_argument("drivers", nargs='?', type=Path, default=DRIVERS,
+                        help="Directory containing S3 and ET4 (default: bundled drivers)")
     parser.add_argument("--output", type=Path, default=ROOT / "output/windows-video")
     parser.add_argument("--edid", type=Path, default=ROOT / "dac-crt.bin")
     args = parser.parse_args()
+    if args.drivers.resolve() == DRIVERS.resolve():
+        verify_bundled_drivers()
     edid = args.edid.read_bytes()
     allowed = edid_resolutions(edid)
     args.output.mkdir(parents=True, exist_ok=True)

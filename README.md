@@ -56,7 +56,7 @@ on the Pi and the program.
 
 - **Run DOS software.** Use familiar commands, COM and EXE programs, BAT scripts,
   real- and protected-mode applications, and DOS extenders. Windows 3.x can also
-  run with your own installation media and suitable drivers. An optional native
+  run with your own installation media and the bundled driver package. An optional native
   Windows configuration applet manages display modes, installs supported sound
   drivers and provides live volume controls.
 - **Choose the PC hardware.** Select CPU profiles from 286 through Pentium,

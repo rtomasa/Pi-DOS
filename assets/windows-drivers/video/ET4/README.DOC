@@ -1,0 +1,103 @@
+
+
+      ET4000 Windows 3.1 Video Driver Installation Instructions
+				
+
+This driver disk is designed to allow you to select or change the
+video driver for Windows 3.1 using Windows Setup. Setup can be
+executed from within Windows, or from DOS. Note that these driver
+files are in Microsoft compressed format and can only be accessed and
+executed by installing through Windows Setup. Simply copying the files
+into your \Windows\System subdirectory WILL NOT work and may corrupt
+your Windows installation. Installing the drivers correctly is,
+however, a simple process. It is accomplished by following these
+instructions:
+
+
+Installation from floppy disk
+
+1) Insert your Driver Disk in the appropriate floppy drive.
+
+2) From your Windows directory, type SETUP and select DISPLAY to
+change the video driver. Or, with Windows running, select Setup from
+the Program Manager Main group. Refer to your Microsoft Windows User's
+Guide for assistance in running Setup from inside Windows.
+
+3) Select "Other disk..." to direct the program to the floppy disk
+holding the new drivers. Note that after the drivers are installed,
+you will not have to select "Other disk..." again should you decide to
+change resolutions. Look for the ET4000-based drivers in the Display
+selection menu to select the display resolution you want.
+
+4) When asked where the drivers will be found, state the following:
+
+	A:\
+
+Following instructions 6-7 below.
+
+
+Installation from Hard Disk
+
+1) Having the drivers loaded on the hard disk will make it easier and
+faster to change resolutions in the future. Make a subdirectory to
+hold the driver files.
+
+example: C:>md \et4drv
+
+	and switch to that subdirectory (C:>cd \et4drv)
+
+2) Insert the drivers disk into the appropriate drive and type the
+following command:
+
+	COPY A:\*.*
+
+3) From your Windows directory, type SETUP and select DISPLAY  to
+change the video driver. Or, with Windows running, select Setup from
+the Program Manager Main group. Refer to your Microsoft Windows User's
+Guide for assistance in running Setup from inside Windows.
+
+4) Select "Other disk..." to direct the program to the subdirectory
+holding the new drivers. Note that once the drivers are installed, you
+should not have to select "Other" again should you decide to change
+resolutions. Look for the ET4000-based drivers in the Display
+selection menu to select the display resolution you want.
+
+5) When asked where the drivers will be found, state the following
+(deleting what the program has displayed in the input window):
+
+	[drive:]\[directory]
+
+	e.g.: C:>\et4drv
+
+6) A standard Windows selection menu will appear with additional video
+drivers from which to select.
+
+7) Proceed normally through the remainder of the process. Check
+Microsoft Windows installation procedures if necessary.
+
+8) If you are having problems installing these drivers please contact your 
+board vendor for further assistance.(as your vendor may have done proprietary
+enhancements that require custom drivers)
+
+			   ** IMPORTANT **
+
+HiColor Driver (32768 and 65535-color driver)
+
+This driver release includes Tseng HiColor drivers for 32768 and 65535
+simultaneous colors. A HiColor comapatible DAC is required.
+
+
+TrueColor Driver (16.7 million-color driver)
+
+The 640x480 16.7 million-color driver requires 1mb of display memory to be
+installed on your video board and a TrueColor DAC.
+
+
+If your select a driver which your board can not support a brief message
+will appear in the upper left of your screen 
+
+	"video driver unable to set desired mode"
+
+before returning you back to the DOS prompt. If this occurs simply, run the
+SETUP program again and choose a supported display mode.
+

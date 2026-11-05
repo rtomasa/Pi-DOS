@@ -1,0 +1,60 @@
+; Names of the disks Setup can prompt for.
+
+[disks]
+    t =., "ET4000 Windows 3.1 Driver Disk", diskt
+
+[display]
+;profile = driver,      Description of driver,                       resolution,    286 grabber,    logo code,     VDD,           386grabber,   ega.sys,   logo data,     optional work section
+svga444 = t:vga4l4.drv, "ET4000  640x480     16 col.",               "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga448 = t:vga4a8.drv, "ET4000  640x480    256 col.",               "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga443 = t:vga4ah.drv, "ET4000  640x480  32768 col.",               "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga446 =t:vga4ahx.drv, "ET4000  640x480  65535 col.",               "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga44r = t:vga44r.drv, "ET4000  640x480  16.7 million colors",      "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+lvga464 = t:vga4l4.drv, "ET4000  800x600     16 col. (Large fonts)", "100,120,120", t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga464 = t:vga4l4.drv, "ET4000  800x600     16 col. (Small fonts)", "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+lvga468 = t:vga4a8.drv, "ET4000  800x600    256 col. (Large fonts)", "100,120,120", t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga468 = t:vga4a8.drv, "ET4000  800x600    256 col. (Small fonts)", "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+lvga463 = t:vga4ah.drv, "ET4000  800x600  32768 col. (Large fonts)", "100,120,120", t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga463 = t:vga4ah.drv, "ET4000  800x600  32768 col. (Small fonts)", "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+lvga466 =t:vga4ahx.drv, "ET4000  800x600  65535 col. (Large fonts)", "100,120,120", t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga466 =t:vga4ahx.drv, "ET4000  800x600  65535 col. (Small fonts)", "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga474 = t:vga4h4.drv, "ET4000 1024x768     16 col. (Small fonts)", "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+lvga474 = t:vga4h4.drv, "ET4000 1024x768     16 col. (Large fonts)", "100,120,120", t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga478 = t:vga4a8.drv, "ET4000 1024x768    256 col. (Small fonts)", "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+lvga478 = t:vga4a8.drv, "ET4000 1024x768    256 col. (Large fonts)", "100,120,120", t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+svga414 = t:vga4h4.drv, "ET4000 1280x1024    16 col. (Small fonts)", "100,96,96",   t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+lvga414 = t:vga4h4.drv, "ET4000 1280x1024    16 col. (Large fonts)", "100,120,120", t:vgacolrx.gr2, t:vgalogo.lgo, t:vddtli4.386, t:v7vga.3gr,,            t:vgalogo.rle
+
+; copy these fonts depending on the 386 grabber being used
+[V7VGA.3gr]
+t:CGA40WOA.FON,t:CGA40850.FON
+t:CGA80WOA.FON,t:CGA80850.FON
+t:EGA40WOA.FON,t:EGA40850.FON
+t:EGA80WOA.FON,t:EGA80850.FON
+
+[sysfonts]
+t:vgasys.fon,"VGA (640x480) resolution System Font", "100,96,96"
+t:8514sys.fon,"8514/a (1024x768) resolution System Font", "100,120,120"
+
+[fixedfonts]
+t:vgafix.fon,"VGA (640x480) resolution Fixed System Font", "100,96,96"
+t:8514fix.fon,"8514/a (1024x768) resolution Fixed System Font",  "100,120,120"
+
+[oemfonts]
+t:vgaoem.fon,"VGA (640x480) resolution Terminal Font (USA/Europe)", "100,96,96",1
+t:8514oem.fon,"8514/a (1024x768) resolution Terminal Font (USA/Europe)", "100,120,120",1
+
+[fonts]
+t:SSERIFE.FON, "MS Sans Serif 8,10,12,14,18,24 (VGA res)", "100,96,96"
+t:SSERIFF.FON, "MS Sans Serif 8,10,12,14,18,24 (8514/a res)", "100,120,120"
+t:COURE.FON, "Courier 10,12,15 (VGA res)", "100,96,96"
+t:COURF.FON, "Courier 10,12,15 (8514/a res)", "100,120,120"
+t:SERIFE.FON, "MS Serif 8,10,12,14,18,24 (VGA res)", "100,96,96"
+t:SERIFF.FON, "MS Serif 8,10,12,14,18,24 (8514/a res)", "100,120,120"
+t:SYMBOLE.FON, "Symbol 8,10,12,14,18,24 (VGA res)", "100,96,96"
+t:SYMBOLF.FON, "Symbol 8,10,12,14,18,24 (8514/a res)", "100,120,120"
+t:SMALLE.FON, "Small Fonts (VGA res)", "100,96,96"
+t:SMALLF.FON, "Small Fonts (8514/a res)", "100,120,120"
+t:ROMAN.FON, "Roman (Plotter)",   "CONTINUOUSSCALING"
+t:SCRIPT.FON, "Script (Plotter)", "CONTINUOUSSCALING"
+t:MODERN.FON, "Modern (Plotter)", "CONTINUOUSSCALING"

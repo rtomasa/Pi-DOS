@@ -11,3 +11,6 @@
 *.COM binary
 *.DOS binary
 *.ZIP binary
+# Preserve vendor bytes and their recorded hashes, including CRLF text files.
+assets/windows-drivers/video/** -text
+assets/windows-drivers/audio/** -text

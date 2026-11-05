@@ -420,7 +420,7 @@ Pi-DOS runs compatible COM, MZ EXE and BAT files. A modern Windows executable is
 
 ### Configuring Windows 3.1
 
-An optional **Pi-DOS Configuration** application supports Windows 3.1/3.11 and Windows for Workgroups in 386 Enhanced Mode. It supplies one Control Panel entry for Display, Audio/MIDI and Pi-DOS settings. Windows installation media and compatible vendor drivers remain separate inputs. See the [Windows setup guide](../windows31.md) for preparing the driver package and installing Windows.
+An optional **Pi-DOS Configuration** application supports Windows 3.1/3.11 and Windows for Workgroups in 386 Enhanced Mode. It supplies one Control Panel entry for Display, Audio/MIDI and Pi-DOS settings. The project includes the supported video and audio driver inputs for building the driver package; Windows installation media remain a separate input. See the [Windows setup guide](../windows31.md) for preparing the driver package and installing Windows.
 
 #### To install or update the configuration application
 

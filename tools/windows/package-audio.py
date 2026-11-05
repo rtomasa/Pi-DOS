@@ -39,7 +39,9 @@ def prepare(cache, disk, manifest_path, fetch=False):
     for driver in sources['drivers']:
         if not driver['enabled']:
             continue
-        archive = cache / driver['archive']
+        archive = ROOT / 'assets/windows-drivers/audio' / driver['archive']
+        if not archive.is_file():
+            archive = cache / driver['archive']
         if not archive.exists():
             if not fetch:
                 raise ValueError(f'Missing {archive}. Run tools/windows/package-audio.py --fetch first.')

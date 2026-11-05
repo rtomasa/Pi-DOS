@@ -66,7 +66,7 @@ def main():
     audio = manifest["audio"]["drivers"]
     assert [driver["id"] for driver in audio] == ["SB2", "PRO2", "SB16", "GUS", "SPEAKER"]
     for driver in audio:
-        original = ROOT / "output/windows-audio" / driver["archive"]
+        original = ROOT / "assets/windows-drivers/audio" / driver["archive"]
         assert hashlib.sha256(original.read_bytes()).hexdigest() == driver["sha256"]
         for file in driver["files"]:
             path = out / "DISK/AUDIO" / driver["id"] / file["name"]

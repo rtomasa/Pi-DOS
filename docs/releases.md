@@ -25,10 +25,12 @@ Activate this environment again in subsequent shells before running the
 procedure. The guide also supports a Typst CLI installation instead of the
 Python `typst` package; `markdown-it-py` is still required.
 
-Supply extracted vendor video driver directories `S3/` and `ET4/`, each with
-`OEMSETUP.INF`, as described in the [Windows guide](windows31.md). These are
-build inputs, not Windows installation media. The audio archives are fetched
-and hash-checked automatically. Open Watcom is bootstrapped to
+Video driver inputs and all five original audio driver archives are tracked in
+`assets/windows-drivers/` and hash-checked during packaging. A fresh clone needs
+no external driver folder or driver downloads. See the
+[driver input inventory](../assets/windows-drivers/README.md) and
+[Windows guide](windows31.md). Windows installation media remain user-supplied.
+Open Watcom is bootstrapped to
 `output/tools/openwatcom` when missing; `WATCOM=/path/to/openwatcom` selects an
 existing Linux x64 installation.
 
@@ -57,7 +59,7 @@ including untracked source files, because the build uses a snapshot of committed
 `HEAD`. Ignored files under `output/` and `dl/` do not make it dirty.
 
 ```sh
-JOBS=4 make release DRIVERS=/path/to/DRIVERS
+JOBS=4 make release
 ```
 
 This command makes no GitHub requests. It:
@@ -109,7 +111,7 @@ Push your source commit normally, then run:
 
 ```sh
 git push
-JOBS=4 make release-upload DRIVERS=/path/to/DRIVERS
+JOBS=4 make release-upload
 ```
 
 The procedure checks GitHub access and that `HEAD` is already on the target
@@ -155,7 +157,9 @@ Track the procedure, Make targets and documentation. Generated bundles, build
 trees, logs and the optional virtual environment stay under `output/`, already
 covered by `.gitignore`. The ordinary generated guide PDF remains ignored too.
 There is no need to commit release binaries or add broad `*.zip`/`*.pdf` ignore
-rules. Keep vendor driver inputs outside the repository or under `output/`.
+rules. Required vendor driver inputs are tracked under `assets/windows-drivers/`,
+outside the disposable build output. `DRIVERS=/path/to/DRIVERS` is available only
+as an optional override for different video inputs.
 
 Public distribution remains subject to the project's existing
 [component and asset license review](../LICENSES/README.md); this packaging

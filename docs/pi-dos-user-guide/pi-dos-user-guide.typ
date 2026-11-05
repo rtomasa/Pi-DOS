@@ -492,7 +492,7 @@
 
 #heading(level: 2)[#text("Configuring Windows 3.1")]#label("h-configuring-windows-31")
 
-#p[#text("An optional ")#strong[#text("Pi-DOS Configuration")]#text(" application supports Windows 3.1/3.11 and Windows for Workgroups in 386 Enhanced Mode. It supplies one Control Panel entry for Display, Audio/MIDI and Pi-DOS settings. Windows installation media and compatible vendor drivers remain separate inputs. See the ")#link("../windows31.md")[#text("Windows setup guide")]#text(" for preparing the driver package and installing Windows.")]
+#p[#text("An optional ")#strong[#text("Pi-DOS Configuration")]#text(" application supports Windows 3.1/3.11 and Windows for Workgroups in 386 Enhanced Mode. It supplies one Control Panel entry for Display, Audio/MIDI and Pi-DOS settings. The project includes the supported video and audio driver inputs for building the driver package; Windows installation media remain a separate input. See the ")#link("../windows31.md")[#text("Windows setup guide")]#text(" for preparing the driver package and installing Windows.")]
 
 #procedure[#text("To install or update the configuration application")]
 

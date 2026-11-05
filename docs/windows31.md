@@ -16,14 +16,20 @@ Enhanced Mode. Its main window opens Display, Audio/MIDI, and Pi-DOS settings.
 No Win32s is needed. The applet is named `PIDOS.CPL`. Setup automatically
 removes the previous `PIVIDEO.CPL`, leaving one Control Panel entry.
 
-Build with Open Watcom and extracted video folders named `S3` and `ET4`:
+Build with Open Watcom using the video inputs and original audio archives tracked
+under `assets/windows-drivers/`. No external driver folder or driver download is
+needed:
 
 ```sh
-python3 tools/windows/package-audio.py --fetch
-make windows-drivers DRIVERS=/home/rtomas/Descargas/DOSBOX/DRIVERS
+make windows-drivers
 python3 tools/windows/check-video.py
 python3 tools/dos/test-config.py
 ```
+
+Video file hashes are recorded in `configs/windows-video.json`; audio archive
+hashes and upstream URLs remain in `configs/windows-audio.json`. The packagers
+verify the bundled inputs. `DRIVERS=/path/to/DRIVERS` is an optional override
+for different video inputs, not a build prerequisite.
 
 Output: `output/windows-video/PIDOSDRV.ZIP`. `PIDOSVID.ZIP` is a compatibility
 copy and `make windows-video` remains an alias. Extract the full `PIDOSDRV`
@@ -64,7 +70,8 @@ from `Z:\BIN`.
 ### Existing Windows audio drivers
 
 The shared Audio and MIDI page selects and installs existing Windows 3.1
-sound drivers. Public archives, hashes, vendor card mappings and source
+sound drivers. The original archives are included under
+`assets/windows-drivers/audio/`; hashes, vendor card mappings and source
 references are recorded in `configs/windows-audio.json`. No new audio driver
 is implemented. Original packages establish Windows support; the new
 Pi-DOS installation paths and playback still require guest validation.
