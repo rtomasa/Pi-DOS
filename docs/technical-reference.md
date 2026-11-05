@@ -1,9 +1,10 @@
 # Pi-DOS technical reference and manual foundation
 
-Version covered: **Pi-DOS 1.0** (`VERSION`). Review date: **30 October 2026**.
-Implementation baseline: **`ff0c194`**, including all 41 development commits from
-`8fb1e69`. Repository preparation and documentation changes made after that
-baseline do not change the runtime described here.
+Version covered: **Pi-DOS 1.1** (`VERSION`). Source review: **5 November 2026**.
+The original hardware evidence, feature audit and development history use the
+**Pi-DOS 1.0** baseline **`ff0c194`**, including 41 development commits from
+`8fb1e69`. Current behavior sections incorporate later source changes; historical
+results do not establish new physical hardware validation for version 1.1.
 
 This is the entry point for writing a Pi-DOS user manual. It explains the
 product's purpose, architecture, current behavior, configuration, hardware
@@ -709,19 +710,28 @@ internal MIDI can play together.
 ### 9.4 Live mixer
 
 Mixer controls include master, SB digital, FM, GUS, CMS, PC speaker, Tandy,
-Tandy DAC, Disney/Covox and internal MIDI. Values are left:right percentages,
-**0–200**, in five-percent arrow steps or preset/custom values. Above 100 can
-clip. The page queries running hardware/levels through CONFIG and MIXER.
+Tandy DAC, Disney/Covox, internal MIDI, CD images and USB CD audio. Values are
+left:right percentages from **0–100**, in five-percent arrow steps or
+preset/custom values. Only channels present in the running mixer are shown.
+The page queries running hardware/levels through CONFIG and MIXER.
 
 When selected hardware matches the running setup, enabled channels preview
 immediately and the page shows **LIVE**. Cancel restores starting levels at
 whole-percent precision; Save retains preview and persistent settings. Pending
-hardware changes suspend preview and restore original levels. Inactive channels
-or unavailable live control show **AFTER REBOOT**. Queries need writable
+hardware changes suspend preview and restore original levels. Unavailable live
+control shows **AFTER REBOOT**. Queries need writable
 `C:\TEMP` or `C:\`; temporary files are created exclusively and removed.
 Persistent `[pidos] mixer_*` values become separate validated MIXER startup
 commands before user AUTOEXEC, avoiding command-tail limits and preserving
 user startup overrides.
+
+The optional Windows Pi-DOS Configuration application has a separate live
+**Audio and MIDI > Volume...** dialog. Available channels have 0–100% levels and
+mute controls, with CD images and USB CD audio independent. Save persists
+changed channels; Cancel restores opening live levels. The general Windows
+Pi-DOS settings page saves boot mixer levels without live preview. See
+[Windows setup and audio](windows31.md) for driver installation, MIDI Mapper,
+restart and upgrade behavior.
 
 ## 10. Storage and media
 

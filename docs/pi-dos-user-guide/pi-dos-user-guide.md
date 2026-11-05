@@ -1,9 +1,10 @@
-# Pi-DOS 1.0 User's Guide
+# Pi-DOS 1.1 User's Guide
 
 A DOS-compatible computer for Raspberry Pi
 
-Edition 1 · 30 October 2026  
-Technical baseline: ff0c194
+Edition 2 · 5 November 2026
+
+Source review: Pi-DOS 1.1
 
 <!-- FRONTMATTER -->
 
@@ -17,11 +18,11 @@ You do not need to understand the underlying system to begin. This guide starts 
 
 ### About this guide
 
-This edition describes Pi-DOS 1.0 at implementation baseline `ff0c194`. Existing installations may retain earlier settings. When this guide says *default*, it means the fresh-image setting at that baseline, unless stated otherwise.
+This edition describes Pi-DOS 1.1, reviewed against the project sources on 5 November 2026. It includes the bundled MIDI assets, Windows configuration and mixer updates, and current startup behavior. Existing installations may retain earlier settings. When this guide says *default*, it means the current fresh-image setting, unless stated otherwise.
 
 This is a user guide rather than a record of development. It explains implemented behavior, but does not certify every Raspberry Pi, peripheral, game or Windows installation. Appendix E summarizes the hardware checks recorded in the technical reference and identifies features that still need physical confirmation.
 
-The supplied technical reference is the authority for Pi-DOS-specific behavior. The organization and restrained print design take inspiration from the 1993 Microsoft MS-DOS 6 Concise User's Guide. The explanations and procedures here are written for Pi-DOS; an MS-DOS command or utility is not assumed to exist just because an older manual describes it.
+The project sources, setup documentation and technical reference establish Pi-DOS-specific behavior. The organization and restrained print design take inspiration from the 1993 Microsoft MS-DOS 6 Concise User's Guide. The explanations and procedures here are written for Pi-DOS; an MS-DOS command or utility is not assumed to exist just because an older manual describes it.
 
 ### Finding the information you need
 
@@ -417,6 +418,28 @@ Follow the program's own installation instructions. Some software expects to run
 
 Pi-DOS runs compatible COM, MZ EXE and BAT files. A modern Windows executable is not a DOS program. Windows 3.x is a separate, user-supplied installation path, not an application automatically included with Pi-DOS.
 
+### Configuring Windows 3.1
+
+An optional **Pi-DOS Configuration** application supports Windows 3.1/3.11 and Windows for Workgroups in 386 Enhanced Mode. It supplies one Control Panel entry for Display, Audio/MIDI and Pi-DOS settings. Windows installation media and compatible vendor drivers remain separate inputs. See the [Windows setup guide](../windows31.md) for preparing the driver package and installing Windows.
+
+#### To install or update the configuration application
+
+1. Prepare `PIDOSDRV.ZIP` on the development computer as described in the Windows setup guide.
+2. Extract its complete `PIDOSDRV` folder to `C:\DRIVERS\PIDOSDRV`. Keep `SETUP.EXE`, `PIDINST.DLL`, `PIDOS.CPL` and the packaged driver folders together.
+3. Start Windows, run `C:\DRIVERS\PIDOSDRV\SETUP.EXE` and choose **Install / Reinstall**.
+4. If asked, close Control Panel and Pi-DOS Configuration before retrying. Setup replaces an older applet, including the former PIVIDEO entry.
+5. Accept the restart prompt when ready, then reopen Control Panel to use the new application.
+
+The **Display** page selects packaged modes for the configured S3 or ET4000 adapter. Changing the emulated adapter itself requires a full Pi-DOS reboot before installing or selecting its Windows driver. Applying a Windows display mode requires restarting Windows. Available resolutions depend on the packaged driver catalogue and display timings.
+
+The **Audio and MIDI** page installs supported existing Windows sound drivers. Select a driver matching the active Pi-DOS hardware. Creative SB2, SB Pro 2, SB16 and PC speaker installation run inside Windows; Gravis launches its original installer after closing Windows. AdLib uses Windows' own Drivers installation and may request Windows disks. Save work before any installer or restart.
+
+Creative installation includes the vendor MIDI Mapper setups and initially selects **SB MIDI Out**, **SBP2 All MIDI** or **SB16 All MIDI**, as appropriate. These route music to the configured Pi-DOS MIDI destination, normally SC-55. Use **Windows MIDI Mapper...** to choose a different setup, such as an FM synthesizer. Windows' common audio and MIDI components must already be installed; its Drivers dialog can request installation media.
+
+The **Pi-DOS settings** page saves the shared hardware and system configuration. These changes normally require rebooting Pi-DOS. Its Mixer settings save boot levels; use **Audio and MIDI > Volume...** for immediate Windows volume changes, described in Chapter 7. **Restart Windows...** restarts the guest environment, while a Pi-DOS reboot also applies changed emulated hardware.
+
+To remove the configuration application, run Setup and choose **Uninstall**. Installed vendor drivers, saved settings, audio caches and backups remain available for a later reinstall. The new Windows installation, upgrade and playback paths still need confirmation in actual guest installations.
+
 ### Editing text and keeping backups
 
 Use `EDIT` for plain-text files such as your startup batch file. Before a significant edit, copy the existing file to a distinct backup name. For example:
@@ -646,7 +669,7 @@ Software Voodoo emulation is enabled by default with maximum memory. It emulates
 
 CRT is the default monitor profile. It follows the guest's rendered dimensions and attempts to select a corresponding host mode near the guest refresh rate. Standard VGA text begins at 720 by 400 pixels at roughly 70 Hz.
 
-Use a display and adapter that can accept the selected timing. A listed mode is not proof that a physical monitor will lock onto it. Pi-DOS supplies VGA-era display timings, not original Hercules electrical output.
+Connect a VGA CRT to the Pi's HDMI output through a suitable active **HDMI-to-VGA DAC**. Use a display and adapter that can accept the selected timing. A listed mode is not proof that a physical monitor will lock onto it. Pi-DOS supplies VGA-era display timings, not original Hercules electrical output.
 
 CRT mode does not add artificial scanlines, phosphor effects or shadow masks. Its intended appearance comes from a physical CRT. It also avoids software aspect correction; physical monitor geometry determines the final shape.
 
@@ -733,9 +756,9 @@ All internally mixed audio, internal MIDI and extracted CD audio follows the sel
 | Roland CM-32L | Matching ROMs in `C:\SYSTEM\MIDI\CM32L` |
 | External USB MIDI | A connected, selected MIDI interface/module |
 
-SC-55 is the fresh-image profile, but it needs the corresponding SoundFont. The SC-55 and Roland GM choices use SoundFont synthesis; they are not verified hardware-accurate emulations of those sound modules. MT-32 and CM-32L use Munt with their respective ROM pairs.
+SC-55 is the fresh-image profile. Both SoundFonts and the MT-32/CM-32L ROM pairs are bundled with the project and installed by the image build. The SC-55 and Roland GM choices use SoundFont synthesis; they are not verified hardware-accurate emulations of those sound modules. MT-32 and CM-32L use Munt with their respective ROM pairs.
 
-Assets must be supplied through the project's authorized asset workflow and match its manifest. They are not included in a fresh source clone. Missing assets or a missing device are reported in the boot MIDI row and disable that managed MIDI profile for the boot.
+All six MIDI assets are included in a fresh source clone and checked against the project manifest. No separate SoundFont or ROM import is required before building the image. Existing installations preserve their asset files; missing assets or a missing device are reported in the boot MIDI row and disable that managed MIDI profile for the boot.
 
 Choose matching music hardware in the game's own setup. Sound Blaster digital effects and internal MIDI music can play together.
 
@@ -755,7 +778,7 @@ Connect the module's audio outputs to its own speakers or mixer. MIDI carries pe
 
 ### Adjusting the mixer
 
-The Mixer page provides master and device-specific levels. Values range from 0 to 200 percent for left and right channels. Levels above 100 percent can clip.
+The Mixer page provides master and device-specific levels, including independent internal MIDI, CD-image and USB-CD audio. Values range from 0 to 100 percent for left and right channels; 100 is the normal maximum. Only sources present in the running mixer are shown. Arrow keys adjust levels in five-percent steps, and presets or custom stereo values are available.
 
 #### To preview and save mixer levels
 
@@ -764,7 +787,15 @@ The Mixer page provides master and device-specific levels. Values range from 0 t
 3. Adjust an enabled channel marked **LIVE**.
 4. Press **F2** to keep the preview and save it, or cancel to restore the starting levels.
 
-Pending hardware changes suspend live preview and restore original levels. Inactive channels or unavailable live control show **AFTER REBOOT**. Temporary queries need writable C: storage.
+Pending hardware changes suspend live preview and restore original levels. When live control is unavailable, the page shows **AFTER REBOOT** and saves levels for the next boot. Temporary queries need writable C: storage.
+
+#### To adjust volume inside Windows
+
+1. Open **Pi-DOS Configuration > Audio and MIDI > Volume...**.
+2. Adjust an available source or its mute control. Changes apply immediately; the sliders link left and right levels from 0 to 100 percent.
+3. Choose **Save** to persist changed channels, or **Cancel** to restore the live levels present when the dialog opened.
+
+Internal MIDI, CD-image audio and USB-CD audio have separate controls. External MIDI module volume remains on the receiving device. Unchanged stereo levels are retained. The live Windows mixer needs the updated Pi-DOS runtime and configuration application; an older runtime reports that live control is unavailable. The general Pi-DOS settings page's Mixer controls save boot levels without this live preview.
 
 If music stutters with Automatic CPU, try a fixed profile as described in Chapter 5. If there is no sound at all, check the physical output, game resources, mixer levels and MIDI assets separately.
 
@@ -845,11 +876,13 @@ D: automatically represents the first eligible USB optical drive. The integratio
 
 No manual mount or reboot is needed for a physical disc swap. Close files first. An absent or empty drive reports not ready. Only one physical optical drive receives the automatic D: mapping.
 
-CD audio is extracted digitally and mixed through the selected physical audio output. It does not use a drive's analogue cable. Physical mixed-mode, CD-audio and hotplug acceptance are still pending in the technical baseline; try your actual drive and discs before depending on them.
+**CD audio playback is supported.** Audio tracks are extracted digitally and mixed through the selected HDMI, analogue jack or USB DAC output. It does not use a drive's analogue cable. Use the USB-CD mixer level to control physical-drive audio independently of CD images. Physical mixed-mode, CD-audio and hotplug acceptance are still pending; try your actual drive and discs before depending on them.
 
 ### Mounting a CD image
 
 Store your image files in a directory such as `C:\IMAGES`. Create that directory if needed and copy the files there from another computer or removable media.
+
+Supported images containing audio tracks can also supply CD audio. A plain ISO data image contains no audio tracks. Adjust image playback with the CD-image mixer level, separately from physical USB-CD audio.
 
 #### To use an ISO image on D:
 
@@ -1435,7 +1468,7 @@ The directory C:\IMAGES used in examples is a suggested user-created location, n
 | Retained LCD preferences | 1024x768, 4:3, linear filtering off |
 | PC sound | SB Pro 2, 220h, IRQ 7, DMA 1 |
 | PC speaker | Enabled |
-| MIDI | SC-55 SoundFont profile, assets required |
+| MIDI | SC-55 SoundFont profile; both SoundFonts and four ROMs bundled |
 | MPU-401 | Intelligent, port 330h, automatic IRQ |
 | Physical audio | Primary HDMI |
 | Keyboard / country | Spanish `sp` / Spain `34` |
@@ -1536,16 +1569,19 @@ Expansion checks the expected signature, sector size, partition starts, label an
 
 ### Building on a development computer
 
-The project uses a Buildroot external tree and pinned upstream sources. Image building requires the documented development-host tools and dependencies. These commands are entered on that development computer, not at the Pi-DOS prompt:
+The project uses a Buildroot external tree and pinned upstream sources. Image building requires Python 3.12 or newer, the documented development-host tools, and `bsdtar` for benchmark extraction. These commands are entered on that development computer, not at the Pi-DOS prompt:
 
 ```sh
+python3 tools/dos/midi-assets.py
 make image-config
 JOBS=4 make image
 ```
 
 The diagnostic alternative is `JOBS=4 make image-diagnostic`. Images are produced under `output/buildroot-arm64/images/`. The build does not flash a physical card or update EEPROM automatically.
 
-The SC-55 and Roland GM SoundFonts and all four MT-32/CM-32L ROMs are included in the repository. The project's MIDI asset tool verifies all six files against its manifest; no separate import is required. A runtime that works offline does not imply an offline build without cached source archives and assets.
+The SC-55 and Roland GM SoundFonts and all four MT-32/CM-32L ROMs are included in the repository. The project's MIDI asset tool verifies all six files against its manifest; no separate import is required. Other sources, toolchains, benchmarks and demos are downloaded as needed into the ignored `dl/` cache; generated builds stay in `output/`. A runtime that works offline does not imply an offline build without every required source archive and asset cached.
+
+After fixing a host dependency or download problem, rerun `JOBS=4 make image`; a normal incremental build does not require another `make image-config`. The benchmark downloader includes the User-Agent fix for archive hosts that reject older checkouts with HTTP 403. Keep the checkout current and preserve valid cached archives.
 
 Use the project's technical reference and build instructions for dependency versions, patch maintenance, rebuilding setup and verification. The complete development history belongs there rather than in this user guide.
 
@@ -1559,7 +1595,7 @@ Preserve the original notices included with tools and data. Consult the reposito
 
 ### Editorial basis
 
-This guide was prepared from the supplied `technical-reference.md`, reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline `ff0c194`. It does not claim that new hardware tests were performed during writing.
+The first edition was prepared from `technical-reference.md`, reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline `ff0c194`. This second edition updates user procedures against the Pi-DOS 1.1 source tree as of 5 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.
 
 The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.
 
@@ -1579,6 +1615,7 @@ Implemented support, host checks and physical confirmation are different kinds o
 | Controllers | Virtual controller checks; physical game calibration and hotplug pending |
 | Audio | Short speaker/FM/SB checks; long audible, analogue-jack and USB acceptance pending |
 | MIDI | Profile, identity and retry implementation; Automatic-CPU Sierra timing issue remains open |
+| Windows configuration | Installer, settings and live mixer implementation with host checks; actual guest upgrades, sound playback and driver combinations need validation |
 | Floppy | Specific Pi 5 Toshiba/TEAC copy and format confirmation; other drives and later metadata changes need checks |
 | Optical / USB data | Host/backend checks and ARM64 integration; physical media, audio and removal acceptance pending |
 | ZIP / sharing / attributes | Focused DOS/backend checks; every application and physical device not certified |
@@ -1674,5 +1711,7 @@ Use this alphabetical index to find a subject. Section links are clickable in th
 | Volume labels | [Labels and media safety](#labels-and-media-safety) |
 | Wildcards | [Using wildcards](#using-wildcards) |
 | Windows for Workgroups | [Windows for Workgroups](#windows-for-workgroups) |
+| Windows setup and drivers | [Configuring Windows 3.1](#configuring-windows-31) |
+| Windows volume | [Adjusting the mixer](#adjusting-the-mixer) |
 | ZIP drives | [Mounting a ZIP as a writable drive](#mounting-a-zip-as-a-writable-drive) |
 | ZIP saves and PFS overlays | [Keeping ZIP saves](#keeping-zip-saves) |

@@ -1,6 +1,6 @@
 // Generated from pi-dos-user-guide.md by build-guide.py.
 // Edit the Markdown for content; edit TEMPLATE in the builder for shared styling.
-#set document(title: "Pi-DOS 1.0 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 10, day: 30))
+#set document(title: "Pi-DOS 1.1 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 11, day: 5))
 #set text(font: "Nimbus Roman", size: 10.5pt, lang: "en", hyphenate: true)
 #set par(justify: true, leading: 4.6pt, first-line-indent: 0pt, spacing: 5.5pt)
 #set page(width: 155mm, height: 230mm, margin: (inside: 20mm, outside: 17mm, top: 21mm, bottom: 18mm), binding: left, header: none, footer: none)
@@ -51,7 +51,7 @@
   set text(size: 8.6pt, weight: "bold", hyphenate: false)
   set par(justify: false)
   if calc.even(n) {
-    grid(columns: (8mm, 1fr), page-label, [Pi-DOS 1.0 User's Guide])
+    grid(columns: (8mm, 1fr), page-label, [Pi-DOS 1.1 User's Guide])
   } else {
     grid(columns: (1fr, 8mm), align(right, title), align(right, page-label))
   }
@@ -65,24 +65,24 @@
 #v(25mm)
 #text(size: 46pt, weight: "bold")[Pi-DOS]
 #v(3mm)
-#text(size: 20pt)[Version 1.0]
+#text(size: 20pt)[Version 1.1]
 #v(7mm)
 #line(length: 100%, stroke: 1.1pt)
 #v(5mm)
 #text(size: 14pt)[A DOS-compatible computer\ for Raspberry Pi]
 #v(1fr)
-#text(size: 10pt)[Edition 1\ 30 October 2026]
+#text(size: 10pt)[Edition 2\ 5 November 2026]
 #pagebreak()
 
 // Verso / edition note.
 #v(12mm)
-#text(size: 17pt, weight: "bold")[Pi-DOS 1.0 User's Guide]
+#text(size: 17pt, weight: "bold")[Pi-DOS 1.1 User's Guide]
 #v(6mm)
-#text(size: 10pt)[Edition 1 · 30 October 2026\ Technical baseline: ff0c194]
+#text(size: 10pt)[Edition 2 · 5 November 2026\ Source review: Pi-DOS 1.1]
 #v(8mm)
-#text(size: 10pt)[Prepared from the supplied Pi-DOS technical reference. This edition describes the reviewed implementation; it does not claim new physical hardware validation.]
+#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. This edition does not claim new physical hardware validation.]
 #v(4mm)
-#text(size: 10pt)[Names of example programs and files are illustrative. Games, commercial software and some MIDI assets must be supplied separately where required.]
+#text(size: 10pt)[Names of example programs and files are illustrative. The MIDI SoundFonts and ROMs are bundled; games, Windows and some sound patches must be supplied separately where required.]
 #v(4mm)
 #text(size: 10pt)[The organization and page design are inspired by the 1993 Microsoft MS-DOS 6 Concise User's Guide. The prose and procedures are written for Pi-DOS. Microsoft endorsement is not implied.]
 #v(4mm)
@@ -120,11 +120,11 @@
 
 #heading(level: 2)[#text("About this guide")]#label("h-about-this-guide")
 
-#p[#text("This edition describes Pi-DOS 1.0 at implementation baseline ")#inline-code("ff0c194")#text(". Existing installations may retain earlier settings. When this guide says ")#emph[#text("default")]#text(", it means the fresh-image setting at that baseline, unless stated otherwise.")]
+#p[#text("This edition describes Pi-DOS 1.1, reviewed against the project sources on 5 November 2026. It includes the bundled MIDI assets, Windows configuration and mixer updates, and current startup behavior. Existing installations may retain earlier settings. When this guide says ")#emph[#text("default")]#text(", it means the current fresh-image setting, unless stated otherwise.")]
 
 #p[#text("This is a user guide rather than a record of development. It explains implemented behavior, but does not certify every Raspberry Pi, peripheral, game or Windows installation. Appendix E summarizes the hardware checks recorded in the technical reference and identifies features that still need physical confirmation.")]
 
-#p[#text("The supplied technical reference is the authority for Pi-DOS-specific behavior. The organization and restrained print design take inspiration from the 1993 Microsoft MS-DOS 6 Concise User's Guide. The explanations and procedures here are written for Pi-DOS; an MS-DOS command or utility is not assumed to exist just because an older manual describes it.")]
+#p[#text("The project sources, setup documentation and technical reference establish Pi-DOS-specific behavior. The organization and restrained print design take inspiration from the 1993 Microsoft MS-DOS 6 Concise User's Guide. The explanations and procedures here are written for Pi-DOS; an MS-DOS command or utility is not assumed to exist just because an older manual describes it.")]
 
 #heading(level: 2)[#text("Finding the information you need")]#label("h-finding-the-information-you-need")
 
@@ -490,6 +490,24 @@
 
 #p[#text("Pi-DOS runs compatible COM, MZ EXE and BAT files. A modern Windows executable is not a DOS program. Windows 3.x is a separate, user-supplied installation path, not an application automatically included with Pi-DOS.")]
 
+#heading(level: 2)[#text("Configuring Windows 3.1")]#label("h-configuring-windows-31")
+
+#p[#text("An optional ")#strong[#text("Pi-DOS Configuration")]#text(" application supports Windows 3.1/3.11 and Windows for Workgroups in 386 Enhanced Mode. It supplies one Control Panel entry for Display, Audio/MIDI and Pi-DOS settings. Windows installation media and compatible vendor drivers remain separate inputs. See the ")#link("../windows31.md")[#text("Windows setup guide")]#text(" for preparing the driver package and installing Windows.")]
+
+#procedure[#text("To install or update the configuration application")]
+
+#items[#enum(start: 1, [#text("Prepare ")#inline-code("PIDOSDRV.ZIP")#text(" on the development computer as described in the Windows setup guide.")], [#text("Extract its complete ")#inline-code("PIDOSDRV")#text(" folder to ")#inline-code("C:\\DRIVERS\\PIDOSDRV")#text(". Keep ")#inline-code("SETUP.EXE")#text(", ")#inline-code("PIDINST.DLL")#text(", ")#inline-code("PIDOS.CPL")#text(" and the packaged driver folders together.")], [#text("Start Windows, run ")#inline-code("C:\\DRIVERS\\PIDOSDRV\\SETUP.EXE")#text(" and choose ")#strong[#text("Install / Reinstall")]#text(".")], [#text("If asked, close Control Panel and Pi-DOS Configuration before retrying. Setup replaces an older applet, including the former PIVIDEO entry.")], [#text("Accept the restart prompt when ready, then reopen Control Panel to use the new application.")])]
+
+#p[#text("The ")#strong[#text("Display")]#text(" page selects packaged modes for the configured S3 or ET4000 adapter. Changing the emulated adapter itself requires a full Pi-DOS reboot before installing or selecting its Windows driver. Applying a Windows display mode requires restarting Windows. Available resolutions depend on the packaged driver catalogue and display timings.")]
+
+#p[#text("The ")#strong[#text("Audio and MIDI")]#text(" page installs supported existing Windows sound drivers. Select a driver matching the active Pi-DOS hardware. Creative SB2, SB Pro 2, SB16 and PC speaker installation run inside Windows; Gravis launches its original installer after closing Windows. AdLib uses Windows' own Drivers installation and may request Windows disks. Save work before any installer or restart.")]
+
+#p[#text("Creative installation includes the vendor MIDI Mapper setups and initially selects ")#strong[#text("SB MIDI Out")]#text(", ")#strong[#text("SBP2 All MIDI")]#text(" or ")#strong[#text("SB16 All MIDI")]#text(", as appropriate. These route music to the configured Pi-DOS MIDI destination, normally SC-55. Use ")#strong[#text("Windows MIDI Mapper...")]#text(" to choose a different setup, such as an FM synthesizer. Windows' common audio and MIDI components must already be installed; its Drivers dialog can request installation media.")]
+
+#p[#text("The ")#strong[#text("Pi-DOS settings")]#text(" page saves the shared hardware and system configuration. These changes normally require rebooting Pi-DOS. Its Mixer settings save boot levels; use ")#strong[#text("Audio and MIDI > Volume...")]#text(" for immediate Windows volume changes, described in Chapter 7. ")#strong[#text("Restart Windows...")]#text(" restarts the guest environment, while a Pi-DOS reboot also applies changed emulated hardware.")]
+
+#p[#text("To remove the configuration application, run Setup and choose ")#strong[#text("Uninstall")]#text(". Installed vendor drivers, saved settings, audio caches and backups remain available for a later reinstall. The new Windows installation, upgrade and playback paths still need confirmation in actual guest installations.")]
+
 #heading(level: 2)[#text("Editing text and keeping backups")]#label("h-editing-text-and-keeping-backups")
 
 #p(sticky: true)[#text("Use ")#inline-code("EDIT")#text(" for plain-text files such as your startup batch file. Before a significant edit, copy the existing file to a distinct backup name. For example:")]
@@ -613,7 +631,7 @@
 
 #heading(level: 2)[#text("CONFIG.SYS and familiar MS-DOS advice")]#label("h-configsys-and-familiar-ms-dos-advice")
 
-#p[#text("Pi-DOS uses its internal DOS environment and native startup system. Copying a PC's CONFIG.SYS does not replace the Pi's boot process. Driver loading and CONFIG.SYS compatibility are limited to what the runtime implements.")]
+#p[#text("Pi-DOS reads writable ")#inline-code("C:\\CONFIG.SYS")#text(" before ")#inline-code("C:\\AUTOEXEC.BAT")#text(" and preserves installer edits. Supported DOS settings and compatible driver commands apply after reboot. See ")#link("../config-sys.md")[#text("CONFIG.SYS support")]#text(" for the supported directives; ")#inline-code("Z:\\CONFIG.SYS")#text(" remains the internal read-only view.")]
 
 #p[#text("Do not copy memory-manager, disk-compression or startup recipes from MS-DOS 6 without checking that they apply. This guide does not prescribe HIMEM, EMM386, DoubleSpace or MS-DOS system utilities as Pi-DOS requirements.")]
 
@@ -714,7 +732,7 @@
 
 #p[#text("CRT is the default monitor profile. It follows the guest's rendered dimensions and attempts to select a corresponding host mode near the guest refresh rate. Standard VGA text begins at 720 by 400 pixels at roughly 70 Hz.")]
 
-#p[#text("Use a display and adapter that can accept the selected timing. A listed mode is not proof that a physical monitor will lock onto it. Pi-DOS supplies VGA-era display timings, not original Hercules electrical output.")]
+#p[#text("Connect a VGA CRT to the Pi's HDMI output through a suitable active ")#strong[#text("HDMI-to-VGA DAC")]#text(". Use a display and adapter that can accept the selected timing. A listed mode is not proof that a physical monitor will lock onto it. Pi-DOS supplies VGA-era display timings, not original Hercules electrical output.")]
 
 #p[#text("CRT mode does not add artificial scanlines, phosphor effects or shadow masks. Its intended appearance comes from a physical CRT. It also avoids software aspect correction; physical monitor geometry determines the final shape.")]
 
@@ -804,9 +822,9 @@
 [#text("A connected, selected MIDI interface/module")],
 ), compact: false)
 
-#p[#text("SC-55 is the fresh-image profile, but it needs the corresponding SoundFont. The SC-55 and Roland GM choices use SoundFont synthesis; they are not verified hardware-accurate emulations of those sound modules. MT-32 and CM-32L use Munt with their respective ROM pairs.")]
+#p[#text("SC-55 is the fresh-image profile. Both SoundFonts and the MT-32/CM-32L ROM pairs are bundled with the project and installed by the image build. The SC-55 and Roland GM choices use SoundFont synthesis; they are not verified hardware-accurate emulations of those sound modules. MT-32 and CM-32L use Munt with their respective ROM pairs.")]
 
-#p[#text("Assets must be supplied through the project's authorized asset workflow and match its manifest. They are not included in a fresh source clone. Missing assets or a missing device are reported in the boot MIDI row and disable that managed MIDI profile for the boot.")]
+#p[#text("All six MIDI assets are included in a fresh source clone and checked against the project manifest. No separate SoundFont or ROM import is required before building the image. Existing installations preserve their asset files; missing assets or a missing device are reported in the boot MIDI row and disable that managed MIDI profile for the boot.")]
 
 #p[#text("Choose matching music hardware in the game's own setup. Sound Blaster digital effects and internal MIDI music can play together.")]
 
@@ -822,13 +840,19 @@
 
 #heading(level: 2)[#text("Adjusting the mixer")]#label("h-adjusting-the-mixer")
 
-#p[#text("The Mixer page provides master and device-specific levels. Values range from 0 to 200 percent for left and right channels. Levels above 100 percent can clip.")]
+#p[#text("The Mixer page provides master and device-specific levels, including independent internal MIDI, CD-image and USB-CD audio. Values range from 0 to 100 percent for left and right channels; 100 is the normal maximum. Only sources present in the running mixer are shown. Arrow keys adjust levels in five-percent steps, and presets or custom stereo values are available.")]
 
 #procedure[#text("To preview and save mixer levels")]
 
 #items[#enum(start: 1, [#text("Start with the intended sound hardware already active.")], [#text("Open PIDOSCFG and select Mixer.")], [#text("Adjust an enabled channel marked ")#strong[#text("LIVE")]#text(".")], [#text("Press ")#strong[#text("F2")]#text(" to keep the preview and save it, or cancel to restore the starting levels.")])]
 
-#p[#text("Pending hardware changes suspend live preview and restore original levels. Inactive channels or unavailable live control show ")#strong[#text("AFTER REBOOT")]#text(". Temporary queries need writable C: storage.")]
+#p[#text("Pending hardware changes suspend live preview and restore original levels. When live control is unavailable, the page shows ")#strong[#text("AFTER REBOOT")]#text(" and saves levels for the next boot. Temporary queries need writable C: storage.")]
+
+#procedure[#text("To adjust volume inside Windows")]
+
+#items[#enum(start: 1, [#text("Open ")#strong[#text("Pi-DOS Configuration > Audio and MIDI > Volume...")]#text(".")], [#text("Adjust an available source or its mute control. Changes apply immediately; the sliders link left and right levels from 0 to 100 percent.")], [#text("Choose ")#strong[#text("Save")]#text(" to persist changed channels, or ")#strong[#text("Cancel")]#text(" to restore the live levels present when the dialog opened.")])]
+
+#p[#text("Internal MIDI, CD-image audio and USB-CD audio have separate controls. External MIDI module volume remains on the receiving device. Unchanged stereo levels are retained. The live Windows mixer needs the updated Pi-DOS runtime and configuration application; an older runtime reports that live control is unavailable. The general Pi-DOS settings page's Mixer controls save boot levels without this live preview.")]
 
 #p[#text("If music stutters with Automatic CPU, try a fixed profile as described in Chapter 5. If there is no sound at all, check the physical output, game resources, mixer levels and MIDI assets separately.")]
 
@@ -907,11 +931,13 @@
 
 #p[#text("No manual mount or reboot is needed for a physical disc swap. Close files first. An absent or empty drive reports not ready. Only one physical optical drive receives the automatic D: mapping.")]
 
-#p[#text("CD audio is extracted digitally and mixed through the selected physical audio output. It does not use a drive's analogue cable. Physical mixed-mode, CD-audio and hotplug acceptance are still pending in the technical baseline; try your actual drive and discs before depending on them.")]
+#p[#text("")#strong[#text("CD audio playback is supported.")]#text(" Audio tracks are extracted digitally and mixed through the selected HDMI, analogue jack or USB DAC output. It does not use a drive's analogue cable. Use the USB-CD mixer level to control physical-drive audio independently of CD images. Physical mixed-mode, CD-audio and hotplug acceptance are still pending; try your actual drive and discs before depending on them.")]
 
 #heading(level: 2)[#text("Mounting a CD image")]#label("h-mounting-a-cd-image")
 
 #p[#text("Store your image files in a directory such as ")#inline-code("C:\\IMAGES")#text(". Create that directory if needed and copy the files there from another computer or removable media.")]
+
+#p[#text("Supported images containing audio tracks can also supply CD audio. A plain ISO data image contains no audio tracks. Adjust image playback with the CD-image mixer level, separately from physical USB-CD audio.")]
 
 #procedure[#text("To use an ISO image on D:")]
 
@@ -1124,6 +1150,8 @@
 #p[#text("Windows for Workgroups 3.11 is user-supplied. Its PCAP path uses its own NE2000 NDIS/protocol stack and may require a separately supplied Microsoft TCP/IP-32 package.")]
 
 #p[#text("Match adapter resources, select Windows startup in PIDOSCFG, and run ")#strong[#text("WFWNET before WIN")]#text(". The helper loads the supplied installation's IFSHLP.SYS through DEVICE.COM and runs NET START. Do not first load DOS packet or ODI stacks for this path.")]
+
+#p[#text("If ")#inline-code("C:\\CONFIG.SYS")#text(" already loads IFSHLP.SYS, run your Windows ")#inline-code("NET START")#text(" command directly instead of WFWNET to avoid loading the driver twice.")]
 
 #p[#text("A separately booted DOS installation instead uses its own CONFIG.SYS and AUTOEXEC.BAT. Direct LAN access does not add SMB2/3 or modern authentication to Windows for Workgroups. Physical LAN, native-IPX and WfW sharing acceptance remain open in this baseline.")]
 
@@ -1544,7 +1572,7 @@
 [#text("PC speaker")],
 [#text("Enabled")],
 [#text("MIDI")],
-[#text("SC-55 SoundFont profile, assets required")],
+[#text("SC-55 SoundFont profile; both SoundFonts and four ROMs bundled")],
 [#text("MPU-401")],
 [#text("Intelligent, port 330h, automatic IRQ")],
 [#text("Physical audio")],
@@ -1567,7 +1595,9 @@
 
 #p(sticky: true)[#text("The standard search path is:")]
 
-#code-block("PATH C:\\​PROGRAMS\\​TOOLS;​C:\\​SYSTEM;​Z:\\​;​Z:\\​SYSTEM;​Z:\\​DOS;​Z:\\​BIN;​Z:\\​TEXTUTIL;​Z:\\​DEBUG;​Z:\\​PATCHING;​Z:\\​4DOS")
+#code-block("PATH C:\\​PROGRAMS\\​TOOLS;​C:\\​SYSTEM;​Z:\\​;​Z:\\​SYSTEM;​Z:\\​DOS;​Z:\\​BIN;​Z:\\​TEXTUTIL")
+
+#p[#text("Networking also adds ")#inline-code("Z:\\NETWORK")#text(" and ")#inline-code("Z:\\NETWORK\\MTCP")#text(", giving a 94-character") #text("PATH. ")#inline-code("Z:\\DEBUG")#text(", ")#inline-code("Z:\\PATCHING")#text(" and ")#inline-code("Z:\\4DOS")#text(" can be used through full paths.") #text("See ")#link("../windows31.md")[#text("Windows 3.1 troubleshooting")]#text(" for Setup and PATH limits.")]
 
 #p[#text("Writable startup sets TEMP and TMP to C:\\TEMP. Extend the existing path in AUTOEXEC.BAT when adding your tools rather than inadvertently discarding the supplied locations.")]
 
@@ -1690,13 +1720,15 @@
 
 #heading(level: 2)[#text("Building on a development computer")]#label("h-building-on-a-development-computer")
 
-#p(sticky: true)[#text("The project uses a Buildroot external tree and pinned upstream sources. Image building requires the documented development-host tools and dependencies. These commands are entered on that development computer, not at the Pi-DOS prompt:")]
+#p(sticky: true)[#text("The project uses a Buildroot external tree and pinned upstream sources. Image building requires Python 3.12 or newer, the documented development-host tools, and ")#inline-code("bsdtar")#text(" for benchmark extraction. These commands are entered on that development computer, not at the Pi-DOS prompt:")]
 
-#code-block("make image-config\nJOBS=4 make image")
+#code-block("python3 tools/dos/midi-assets.py\nmake image-config\nJOBS=4 make image")
 
 #p[#text("The diagnostic alternative is ")#inline-code("JOBS=4 make image-diagnostic")#text(". Images are produced under ")#inline-code("output/buildroot-arm64/images/")#text(". The build does not flash a physical card or update EEPROM automatically.")]
 
-#p[#text("The SC-55 and Roland GM SoundFonts and all four MT-32/CM-32L ROMs are included in the repository. The project's MIDI asset tool verifies all six files against its manifest; no separate import is required. A runtime that works offline does not imply an offline build without cached source archives and assets.")]
+#p[#text("The SC-55 and Roland GM SoundFonts and all four MT-32/CM-32L ROMs are included in the repository. The project's MIDI asset tool verifies all six files against its manifest; no separate import is required. Other sources, toolchains, benchmarks and demos are downloaded as needed into the ignored ")#inline-code("dl/")#text(" cache; generated builds stay in ")#inline-code("output/")#text(". A runtime that works offline does not imply an offline build without every required source archive and asset cached.")]
+
+#p[#text("After fixing a host dependency or download problem, rerun ")#inline-code("JOBS=4 make image")#text("; a normal incremental build does not require another ")#inline-code("make image-config")#text(". The benchmark downloader includes the User-Agent fix for archive hosts that reject older checkouts with HTTP 403. Keep the checkout current and preserve valid cached archives.")]
 
 #p[#text("Use the project's technical reference and build instructions for dependency versions, patch maintenance, rebuilding setup and verification. The complete development history belongs there rather than in this user guide.")]
 
@@ -1710,7 +1742,7 @@
 
 #heading(level: 2)[#text("Editorial basis")]#label("h-editorial-basis")
 
-#p[#text("This guide was prepared from the supplied ")#inline-code("technical-reference.md")#text(", reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline ")#inline-code("ff0c194")#text(". It does not claim that new hardware tests were performed during writing.")]
+#p[#text("The first edition was prepared from ")#inline-code("technical-reference.md")#text(", reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline ")#inline-code("ff0c194")#text(". This second edition updates user procedures against the Pi-DOS 1.1 source tree as of 5 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.")]
 
 #p[#text("The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.")]
 
@@ -1741,6 +1773,8 @@
 [#text("Short speaker/FM/SB checks; long audible, analogue-jack and USB acceptance pending")],
 [#text("MIDI")],
 [#text("Profile, identity and retry implementation; Automatic-CPU Sierra timing issue remains open")],
+[#text("Windows configuration")],
+[#text("Installer, settings and live mixer implementation with host checks; actual guest upgrades, sound playback and driver combinations need validation")],
 [#text("Floppy")],
 [#text("Specific Pi 5 Toshiba/TEAC copy and format confirmation; other drives and later metadata changes need checks")],
 [#text("Optical / USB data")],
@@ -1916,6 +1950,10 @@
 [#link(label("h-using-wildcards"))[#text("Using wildcards")]#text(" (p. ")#ref(label("h-using-wildcards"), form: "page", supplement: none)#text(")")],
 [#text("Windows for Workgroups")],
 [#link(label("h-windows-for-workgroups"))[#text("Windows for Workgroups")]#text(" (p. ")#ref(label("h-windows-for-workgroups"), form: "page", supplement: none)#text(")")],
+[#text("Windows setup and drivers")],
+[#link(label("h-configuring-windows-31"))[#text("Configuring Windows 3.1")]#text(" (p. ")#ref(label("h-configuring-windows-31"), form: "page", supplement: none)#text(")")],
+[#text("Windows volume")],
+[#link(label("h-adjusting-the-mixer"))[#text("Adjusting the mixer")]#text(" (p. ")#ref(label("h-adjusting-the-mixer"), form: "page", supplement: none)#text(")")],
 [#text("ZIP drives")],
 [#link(label("h-mounting-a-zip-as-a-writable-drive"))[#text("Mounting a ZIP as a writable drive")]#text(" (p. ")#ref(label("h-mounting-a-zip-as-a-writable-drive"), form: "page", supplement: none)#text(")")],
 [#text("ZIP saves and PFS overlays")],

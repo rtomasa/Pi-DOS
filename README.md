@@ -7,10 +7,33 @@ applications, programming tools and demoscene productions. It combines the
 DOSBox-X emulation engine with a small Linux system built specifically for the
 Raspberry Pi. You work in DOS from startup to shutdown.
 
+**Current system version: 1.1.**
+
 **Development status:** basic boot and input have been confirmed on Pi 3, Pi 4
 and Pi 5. The shared image targets more boards, but those still need hardware
 testing. Peripheral and application compatibility varies; see
 [what has been verified](docs/pi-dos-user-guide/pi-dos-user-guide.md#appendix-e-compatibility-and-verification-notes).
+
+## Connect real hardware
+
+Use a physical CRT monitor, insert a floppy disk or install a DOS program from
+an actual CD. Pi-DOS connects these peripherals to the emulated DOS computer:
+
+| Hardware | What you can do |
+| --- | --- |
+| **VGA CRT through an HDMI-to-VGA DAC** | Connect the Pi's HDMI output to a real VGA CRT using a suitable active digital-to-analogue adapter. CRT mode follows DOS display modes and refresh rates, including VGA text near 70 Hz. The monitor and DAC must accept the selected timings. |
+| **External USB floppy drive** | Access physical disks as A:, copy files, write to supported writable media and format supported disks. Capacity and format support depend on the drive. |
+| **External USB CD/DVD drive** | Access data CDs as D:, run DOS installers and change physical discs without manual mounting. The optical integration targets CDs, including when using DVD-drive hardware. |
+| **CD audio** | Play audio tracks from physical CDs in compatible USB optical drives and from supported disc images. Audio is extracted digitally into the Pi-DOS mixer and sent to the selected HDMI, analogue or USB audio output. Physical-disc and image audio have separate volume controls. |
+
+The CRT appearance comes from the monitor itself. You can also use an LCD with
+a fixed output resolution, aspect controls and optional smoothing. USB sticks,
+external disks, mice, gamepads and external MIDI interfaces are supported too.
+
+USB floppy copying and formatting have been confirmed with specific drives.
+Physical optical-drive, mixed-mode and CD-audio compatibility still need
+validation with individual drives and discs; see the
+[media guide](docs/pi-dos-user-guide/pi-dos-user-guide.md#chapter-8-using-disks-and-removable-media).
 
 ## The idea
 
@@ -33,14 +56,16 @@ on the Pi and the program.
 
 - **Run DOS software.** Use familiar commands, COM and EXE programs, BAT scripts,
   real- and protected-mode applications, and DOS extenders. Windows 3.x can also
-  run with your own installation media and suitable drivers.
+  run with your own installation media and suitable drivers. An optional native
+  Windows configuration applet manages display modes, installs supported sound
+  drivers and provides live volume controls.
 - **Choose the PC hardware.** Select CPU profiles from 286 through Pentium,
   configure DOS memory, and choose video adapters from CGA and Hercules through
   VGA and SVGA/VESA. An ARM64 dynamic recompiler speeds up x86 execution.
 - **Use a CRT or LCD.** CRT mode follows DOS resolutions and refresh rates for
   suitable displays and adapters. LCD mode uses a fixed resolution with 4:3 or
-  original-pixel aspect and optional smoothing. CRT mode is intended for a
-  physical CRT; it does not add scanline effects.
+  original-pixel aspect, optional smoothing and an optional CPU/temperature
+  overlay. CRT mode is intended for a physical CRT; it does not add scanline effects.
 - **Set up classic sound and music.** PC speaker, AdLib, Sound Blaster and Gravis
   UltraSound are available. MIDI options include SoundFont synthesis, Munt-based
   MT-32/CM-32L emulation and external USB MIDI. SC-55 and Roland GM SoundFonts
@@ -49,7 +74,7 @@ on the Pi and the program.
 - **Keep and move your files.** C: is persistent FAT32 storage, accessible from
   another computer. Pi-DOS also manages USB data volumes, floppy and optical
   drives. Mount disk/CD images or run from a ZIP with saves kept in a separate
-  folder beside the archive.
+  folder beside the archive. Supported CD images can also provide CD audio.
 - **Configure everything from DOS.** `PIDOSCFG` covers CPU, memory, video, sound,
   mixer, input, networking and system settings. USB controllers, screenshots and
   shortcuts for switching multi-disc image sets are supported. `EDIT` opens the
@@ -89,6 +114,10 @@ remaining card space on first boot. There is no separately established minimum
 physical RAM figure; the default **16 MiB of emulated DOS memory** is separate
 from the Pi's own RAM.
 
+For a VGA CRT, use a suitable HDMI-to-VGA DAC and a monitor that accepts the
+configured timings. External USB floppy and CD/DVD drives are optional; their
+power needs may require a powered USB hub.
+
 Wired Ethernet is optional, for networking and automatic time synchronization.
 Wi-Fi and Bluetooth are not configured. This image uses HDMI output; DSI and
 composite displays are outside its current scope. CRT operation requires a
@@ -115,8 +144,7 @@ python3 --version
 Check that the reported Python version is at least 3.12; older distributions may
 need a newer Python installation available as `python3`. Buildroot checks its
 remaining host dependencies when the build starts. Internet access is needed
-for the initial source, toolchain and asset downloads. Sources are cached under
-`dl/`, and build products stay under `output/`.
+for the initial source, toolchain, benchmark and demo downloads.
 
 ### 2. Verify the MIDI assets
 
@@ -206,6 +234,10 @@ Keep the partition's `PI-DOS` label: the system uses it to find your files.
 Z: contains the built-in utilities. USB floppy drives use A:, optical drives
 use D:, and supported USB data volumes receive free letters starting at E:.
 `IMGMOUNT` handles disk/CD images; `ZIPMOUNT` handles ZIP archives.
+
+For CD audio, choose a physical audio output in PIDOSCFG's System page.
+Use the Mixer page's separate CD-image and USB-CD levels to adjust playback;
+an optical drive's analogue audio cable is unnecessary.
 
 Type `PIDOSCFG` to change hardware and system settings, save, then use `REBOOT`
 to apply them. Advanced settings live in `C:\SYSTEM\PIDOS.CFG`. Put your own

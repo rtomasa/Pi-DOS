@@ -15,7 +15,7 @@ STEM = 'pi-dos-user-guide'
 
 TEMPLATE = r'''// Generated from pi-dos-user-guide.md by build-guide.py.
 // Edit the Markdown for content; edit TEMPLATE in the builder for shared styling.
-#set document(title: "Pi-DOS 1.0 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 10, day: 30))
+#set document(title: "Pi-DOS 1.1 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 11, day: 5))
 #set text(font: "Nimbus Roman", size: 10.5pt, lang: "en", hyphenate: true)
 #set par(justify: true, leading: 4.6pt, first-line-indent: 0pt, spacing: 5.5pt)
 #set page(width: 155mm, height: 230mm, margin: (inside: 20mm, outside: 17mm, top: 21mm, bottom: 18mm), binding: left, header: none, footer: none)
@@ -66,7 +66,7 @@ TEMPLATE = r'''// Generated from pi-dos-user-guide.md by build-guide.py.
   set text(size: 8.6pt, weight: "bold", hyphenate: false)
   set par(justify: false)
   if calc.even(n) {
-    grid(columns: (8mm, 1fr), page-label, [Pi-DOS 1.0 User's Guide])
+    grid(columns: (8mm, 1fr), page-label, [Pi-DOS 1.1 User's Guide])
   } else {
     grid(columns: (1fr, 8mm), align(right, title), align(right, page-label))
   }
@@ -80,24 +80,24 @@ TEMPLATE = r'''// Generated from pi-dos-user-guide.md by build-guide.py.
 #v(25mm)
 #text(size: 46pt, weight: "bold")[Pi-DOS]
 #v(3mm)
-#text(size: 20pt)[Version 1.0]
+#text(size: 20pt)[Version 1.1]
 #v(7mm)
 #line(length: 100%, stroke: 1.1pt)
 #v(5mm)
 #text(size: 14pt)[A DOS-compatible computer\ for Raspberry Pi]
 #v(1fr)
-#text(size: 10pt)[Edition 1\ 30 October 2026]
+#text(size: 10pt)[Edition 2\ 5 November 2026]
 #pagebreak()
 
 // Verso / edition note.
 #v(12mm)
-#text(size: 17pt, weight: "bold")[Pi-DOS 1.0 User's Guide]
+#text(size: 17pt, weight: "bold")[Pi-DOS 1.1 User's Guide]
 #v(6mm)
-#text(size: 10pt)[Edition 1 · 30 October 2026\ Technical baseline: ff0c194]
+#text(size: 10pt)[Edition 2 · 5 November 2026\ Source review: Pi-DOS 1.1]
 #v(8mm)
-#text(size: 10pt)[Prepared from the supplied Pi-DOS technical reference. This edition describes the reviewed implementation; it does not claim new physical hardware validation.]
+#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. This edition does not claim new physical hardware validation.]
 #v(4mm)
-#text(size: 10pt)[Names of example programs and files are illustrative. Games, commercial software and some MIDI assets must be supplied separately where required.]
+#text(size: 10pt)[Names of example programs and files are illustrative. The MIDI SoundFonts and ROMs are bundled; games, Windows and some sound patches must be supplied separately where required.]
 #v(4mm)
 #text(size: 10pt)[The organization and page design are inspired by the 1993 Microsoft MS-DOS 6 Concise User's Guide. The prose and procedures are written for Pi-DOS. Microsoft endorsement is not implied.]
 #v(4mm)

@@ -139,17 +139,18 @@ reports missing assets/devices in the DOS MIDI boot row. MIDI output or
 interface changes require a reboot. Missing profile keys preserve legacy
 manual MIDI configuration.
 
-Stage the supplied assets before a future image build:
+All six MIDI assets are included in the repository. Verify them before an
+image build:
 
 ```sh
-python3 tools/dos/midi-assets.py --source /home/rtomas/Datos/Emulation/bios/RePlay/bios/scummvm
+python3 tools/dos/midi-assets.py
 ```
 
-The importer verifies `configs/midi-assets.json` hashes and stores files in
-the ignored `assets/midi` directory. Build hooks package those inputs into
-the initramfs and data partition; ROMs and SF2 files are not stored in Git.
-See the [asset setup guide](../../assets/midi/README.md) for migration from the
-previous `output/midi-assets` location.
+The tool verifies the sizes and hashes in `configs/midi-assets.json`. The
+SoundFonts and ROMs are tracked in `assets/midi`; build hooks package them into
+the initramfs and data partition. See the
+[asset setup guide](../../assets/midi/README.md) for optional reimport and
+migration from the previous `output/midi-assets` location.
 
 Mixer controls expose master, SB digital, FM, GUS, CMS, PC speaker, Tandy,
 Tandy DAC, Disney/Covox, internal MIDI music, CD images and USB CD audio.
