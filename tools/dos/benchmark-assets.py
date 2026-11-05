@@ -114,7 +114,11 @@ def main():
             archive.parent.mkdir(parents=True, exist_ok=True)
             temporary = archive.with_suffix('.download')
             try:
-                with urllib.request.urlopen(item['url'], timeout=60) as source, temporary.open('wb') as target:
+                # Some archive hosts reject Python's default User-Agent.
+                request = urllib.request.Request(item['url'], headers={
+                    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0',
+                })
+                with urllib.request.urlopen(request, timeout=60) as source, temporary.open('wb') as target:
                     while block := source.read(1024 * 1024):
                         target.write(block)
                 if sha256(temporary.read_bytes()) != item['sha256']:
