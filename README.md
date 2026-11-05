@@ -137,7 +137,7 @@ On Debian/Ubuntu, the host packages include:
 sudo apt-get update
 sudo apt-get install build-essential bash bc bison bzip2 ca-certificates \
   cpio file flex git libarchive-tools libncurses-dev libssl-dev patch perl \
-  pkg-config python3 rsync unzip wget xz-utils
+  pkg-config python3 python3-venv rsync unzip wget xz-utils
 python3 --version
 ```
 

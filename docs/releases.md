@@ -12,18 +12,12 @@ Use the Linux x86-64 build host and dependencies described in the
 `bsdtar`, `unzip` and `xz`. Allow enough disk space and time for a complete
 Buildroot build, including a new cross-toolchain, on every execution.
 
-Install the guide dependencies in a local environment:
-
-```sh
-python3 -m venv output/release-venv
-. output/release-venv/bin/activate
-python3 -m pip install -r docs/pi-dos-user-guide/requirements.txt
-```
-
-On Debian/Ubuntu, install `python3-venv` if environment creation needs it.
-Activate this environment again in subsequent shells before running the
-procedure. The guide also supports a Typst CLI installation instead of the
-Python `typst` package; `markdown-it-py` is still required.
+The release command creates `output/release/guide-venv/` automatically and
+installs the exact guide package versions pinned in the committed
+`docs/pi-dos-user-guide/requirements.txt`. It checks and reuses those packages on
+later builds. No manual pip installation or environment activation is needed;
+the system Python packages are not modified. Initial package installation needs
+internet access. On Debian/Ubuntu, include `python3-venv` in the host prerequisites.
 
 Video driver inputs and all five original audio driver archives are tracked in
 `assets/windows-drivers/` and hash-checked during packaging. A fresh clone needs
@@ -65,7 +59,8 @@ JOBS=4 make release
 This command makes no GitHub requests. It:
 
 1. Exports committed sources into a fresh `output/release/work/source` tree.
-2. Rebuilds `PIDOSCFG.EXE` and the unified Windows 3.1/3.11 driver installer.
+2. Prepares the pinned guide tools automatically, then rebuilds `PIDOSCFG.EXE`
+   and the unified Windows 3.1/3.11 driver installer.
 3. Configures the standard ARM64 image from the tracked defconfig and builds it
    from scratch, including the existing image verification.
 4. Regenerates the guide from Markdown and compiles its PDF.

@@ -5,7 +5,6 @@ import argparse
 from datetime import datetime, timezone
 import fcntl
 import hashlib
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -119,10 +118,39 @@ def build_preflight(drivers, jobs):
     for tool in ('bash', 'make', 'xz', 'unzip', 'bsdtar'):
         if not shutil.which(tool):
             raise RuntimeError(f'Missing host tool: {tool}; see README.md build prerequisites.')
-    if not importlib.util.find_spec('markdown_it') or not (
-            importlib.util.find_spec('typst') or shutil.which('typst')):
-        raise RuntimeError('Install guide dependencies: python3 -m pip install -r '
-                           'docs/pi-dos-user-guide/requirements.txt')
+
+
+def prepare_guide_python(source):
+    """Install pinned guide tools locally, without changing the system Python."""
+    requirements = source / 'docs/pi-dos-user-guide/requirements.txt'
+    environment = OUTPUT / 'guide-venv'
+    interpreter = environment / 'bin/python'
+    if environment.is_symlink():
+        raise RuntimeError(f'Remove the unexpected symlink: {environment}')
+    if not interpreter.is_file():
+        try:
+            run(sys.executable, '-m', 'venv', environment)
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError('Cannot create the local guide environment. On Debian/Ubuntu, '
+                               'install python3-venv, then rerun this command.') from error
+    probe = '''from importlib.metadata import version
+from pathlib import Path
+import sys
+for line in Path(sys.argv[1]).read_text().splitlines():
+    line = line.strip()
+    if line and not line.startswith('#'):
+        package, expected = line.split('==')
+        assert version(package) == expected, package
+import markdown_it, typst
+'''
+    command = [str(interpreter), '-c', probe, str(requirements)]
+    status = subprocess.run(command, cwd=source, capture_output=True)
+    if status.returncode:
+        print('Preparing pinned PDF guide tools in output/release/guide-venv', flush=True)
+        run(interpreter, '-m', 'pip', 'install', '--disable-pip-version-check',
+            '--cache-dir', OUTPUT / 'pip-cache', '-r', requirements)
+        subprocess.run(command, cwd=source, check=True)
+    return interpreter
 
 
 def build_bundle(commit, drivers, jobs):
@@ -140,6 +168,8 @@ def build_bundle(commit, drivers, jobs):
     with tarfile.open(archive) as package:
         package.extractall(source, filter='data')
     archive.unlink()
+    # Prepare guide tools before starting the expensive compiler/image builds.
+    guide_python = prepare_guide_python(source)
     # Share only downloaded archives and the compiler; all compiled image/driver
     # outputs live in the fresh snapshot, never in the developer's output tree.
     (ROOT / 'dl').mkdir(exist_ok=True)
@@ -167,7 +197,7 @@ def build_bundle(commit, drivers, jobs):
     build('bash', 'tools/windows/build-video.sh', driver_source)
     build('bash', 'tools/image/build.sh', 'configure')
     build('bash', 'tools/image/build.sh', 'build')  # Includes image verification.
-    build(sys.executable, 'docs/pi-dos-user-guide/build-guide.py')
+    build(guide_python, 'docs/pi-dos-user-guide/build-guide.py')
 
     image = source / 'output/buildroot-arm64/images/pi-dos-arm64-sdcard.img'
     with tempfile.TemporaryDirectory(prefix='.bundle-', dir=OUTPUT) as temporary:
