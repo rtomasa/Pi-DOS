@@ -57,7 +57,7 @@ When a procedure says to type a command, type the command and press **Enter**. D
 
 Have a copy of the Pi-DOS image intended for your board, suitable storage and a way to write the image from another computer. Keep that other computer available for copying files or repairing a card that Pi-DOS cannot mount.
 
-Pi-DOS supplies a DOS-compatible environment, not an original Microsoft DOS installation. Games, commercial applications, Windows, MIDI ROMs and some sound assets may need to be supplied separately. Use software and assets you are entitled to use, and retain their accompanying instructions.
+Pi-DOS supplies a DOS-compatible environment, not an original Microsoft DOS installation. Games, commercial applications, Windows and some sound patches may need to be supplied separately. The two SoundFonts and four MT-32/CM-32L ROMs are included. Use software and assets you are entitled to use, and retain their accompanying instructions.
 
 <!-- MAINMATTER -->
 
@@ -1545,7 +1545,7 @@ JOBS=4 make image
 
 The diagnostic alternative is `JOBS=4 make image-diagnostic`. Images are produced under `output/buildroot-arm64/images/`. The build does not flash a physical card or update EEPROM automatically.
 
-User-supplied MIDI assets are staged with the project's MIDI asset importer and must match its manifest. A runtime that works offline does not imply an offline build without cached source archives and assets.
+The SC-55 and Roland GM SoundFonts and all four MT-32/CM-32L ROMs are included in the repository. The project's MIDI asset tool verifies all six files against its manifest; no separate import is required. A runtime that works offline does not imply an offline build without cached source archives and assets.
 
 Use the project's technical reference and build instructions for dependency versions, patch maintenance, rebuilding setup and verification. The complete development history belongs there rather than in this user guide.
 

@@ -58,9 +58,10 @@ files, including the reboot request followed by `EXIT`.
 
 ## Build locally
 
-First import the required MIDI build inputs into `assets/midi` using the
-[asset setup guide](../assets/midi/README.md). These files are kept outside
-`output/` and must be supplied separately on a fresh clone.
+The required MIDI SoundFonts and ROMs are included in `assets/midi`, outside
+`output/`. A fresh clone needs no separate MIDI import. Verify the bundled
+files with `python3 tools/dos/midi-assets.py`; see the
+[asset setup guide](../assets/midi/README.md).
 
 ```sh
 make image-config
@@ -84,7 +85,7 @@ dependencies are incorporated without resetting local selections.
 | `br2-external/` | External board configuration and packages; no Buildroot fork |
 | `src/init/init.c` | Custom root PID 1 supervisor |
 | `configs/pi-dos.conf` | Appliance DOS runtime defaults |
-| `assets/midi/` | User-supplied, checksum-verified MIDI build inputs (binaries ignored by Git) |
+| `assets/midi/` | Bundled, checksum-verified SoundFonts and MT-32/CM-32L ROMs tracked in Git |
 | `output/src/buildroot-2026.08/` | Verified, extracted upstream Buildroot |
 | `dl/buildroot/` | Buildroot-managed package download cache |
 | `output/buildroot-arm64/` | Isolated AArch64 cross-build output |

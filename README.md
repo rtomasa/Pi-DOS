@@ -43,9 +43,9 @@ on the Pi and the program.
   physical CRT; it does not add scanline effects.
 - **Set up classic sound and music.** PC speaker, AdLib, Sound Blaster and Gravis
   UltraSound are available. MIDI options include SoundFont synthesis, Munt-based
-  MT-32/CM-32L emulation and external USB MIDI. SoundFonts, ROMs and some patches
-  must be supplied separately. Audio can use HDMI, a supported Pi's analogue jack
-  or a USB DAC.
+  MT-32/CM-32L emulation and external USB MIDI. SC-55 and Roland GM SoundFonts
+  and MT-32/CM-32L ROMs are included; some patches must be supplied separately.
+  Audio can use HDMI, a supported Pi's analogue jack or a USB DAC.
 - **Keep and move your files.** C: is persistent FAT32 storage, accessible from
   another computer. Pi-DOS also manages USB data volumes, floppy and optical
   drives. Mount disk/CD images or run from a ZIP with saves kept in a separate
@@ -118,26 +118,19 @@ remaining host dependencies when the build starts. Internet access is needed
 for the initial source, toolchain and asset downloads. Sources are cached under
 `dl/`, and build products stay under `output/`.
 
-### 2. Supply the MIDI assets
+### 2. Verify the MIDI assets
 
-The current image build requires the SoundFonts and MT-32/CM-32L ROMs listed in
-[the MIDI asset guide](assets/midi/README.md). They are not included in Git.
-Prepare a ScummVM-style asset directory containing the matching `soundfonts/`
-and `extra/` files, then import them:
-
-```sh
-python3 tools/dos/midi-assets.py --source /path/to/scummvm
-```
-
-Replace the path with your own asset directory. The importer checks file sizes
-and hashes and stages the files in `assets/midi/`. If they are already staged,
-verify them with:
+The SC-55 and Roland GM SoundFonts and all four MT-32/CM-32L ROMs are included
+in Git under `assets/midi/`. No separate MIDI asset import is needed for a
+fresh clone. Verify all six files against their pinned sizes and hashes with:
 
 ```sh
 python3 tools/dos/midi-assets.py
 ```
 
 These inputs are required even if you intend to disable MIDI at runtime.
+See [the MIDI asset guide](assets/midi/README.md) for the file layout and
+optional reimport instructions.
 
 ### 3. Configure and build
 

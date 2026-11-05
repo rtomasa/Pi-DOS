@@ -111,7 +111,7 @@ DOS files -> managed adapters -> FAT32 C:, USB FAT/exFAT, floppy, CD, images or 
 | Native runtime adapters | Managed drives, physical media, attributes, locks, ZIPs, controllers and image switching | `src/runtime/` |
 | Shared definitions | CPU/video/MIDI profiles, controller/network/display options and shortcut policy | `src/common/` |
 | DOS setup program | User-facing configuration and first-boot screens | `src/doscfg/` |
-| Asset importers | Download/stage checksum-pinned networking, benchmarks, demos and user-supplied MIDI assets | `tools/dos/`, `configs/*-assets.json` |
+| Asset importers | Download/stage checksum-pinned networking, benchmarks and demos; verify or reimport bundled MIDI assets | `tools/dos/`, `configs/*-assets.json` |
 | Verification tools | Image inspection and focused host/native/hardware checks | `tools/image/`, `tools/phase0/`, `tests/` |
 
 The supervisor runs as root and launches the runtime as its child. There is no
@@ -687,12 +687,12 @@ use Munt and need their respective ROM pairs. MIDI settings expose Intelligent
 or UART MPU-401, default port 330h, automatic IRQ, external destination selection
 and optional SysEx delay for older modules.
 
-The user-supplied assets are identified by hashes in `configs/midi-assets.json`.
-The importer places them in ignored `assets/midi`; ROM/SF2 payloads are
-not committed to Git. Build hooks stage supplied assets into the image and data
+The bundled assets are identified by hashes in `configs/midi-assets.json`.
+The six ROM/SF2 payloads are included in Git under `assets/midi`. The importer
+can verify or reimport them. Build hooks stage these assets into the image and data
 partition, preserving existing destination files. Missing assets/devices are
 reported in the boot MIDI row and disable the managed profile for that boot.
-A new clone needs the required legally obtained assets staged separately.
+A new clone includes all six required MIDI assets.
 
 External destinations are saved by stable identity rather than transient ALSA
 client numbers. Rescan uses F5 in the picker. Interfaces lacking a unique serial
@@ -1277,9 +1277,10 @@ and other build artifacts. Source downloads/cache live in ignored `dl/` and
 `output/`; neither belongs in a Git source sync. The tools generate images;
 they do not flash a physical card or update EEPROM.
 
-A fresh clone must stage required user-supplied MIDI assets through
-`tools/dos/midi-assets.py --source /path/to/authorized/assets`. The exact files
-must match the manifest and are stored in `assets/midi`, outside build output.
+A fresh clone includes the SC-55 and Roland GM SoundFonts and all four
+MT-32/CM-32L ROMs in `assets/midi`, outside build output. Verify them with
+`python3 tools/dos/midi-assets.py`; no separate import is required. The optional
+`--source /path/to/authorized/assets` reimports files matching the manifest.
 See the [asset setup guide](../assets/midi/README.md) for import and migration.
 Downloads for other packs are checksum-verified and
 cached. Offline operation of the **runtime** is distinct from an **offline
@@ -1355,9 +1356,10 @@ tools and compiler runtime retain their respective notices; mTCP includes its
 GPLv3 notice and corresponding source. BOOT retains LICENCE.broadcom.
 
 The tracked personalized editor and ARJ binary have recorded provenance but
-need their applicable distribution conditions reviewed. MIDI ROMs/SoundFonts
-are user-supplied and excluded from Git. Doom/Quake shareware data is not made
-GPL by the game engine source license. Benchmark compilations and demo archive
+need their applicable distribution conditions reviewed. The bundled MIDI ROMs
+and SoundFonts retain their own rights and still require redistribution review.
+Doom/Quake shareware data is not made GPL by the game engine source license.
+Benchmark compilations and demo archive
 availability do not establish blanket public redistribution rights.
 
 Complete the component/firmware/payload inventory, notices, corresponding-source
@@ -1587,7 +1589,7 @@ it does not assert that all related upstream code has been removed.
 | Roland MT-32 emulation | `v` | Implemented | Munt profile requires supplied matching ROM pair. |
 | General MIDI | `v` | Implemented | FluidSynth SoundFont profiles and independent MPU-401 configuration. |
 | Roland Sound Canvas / SC-55 emulation | `v` | Partial | SC-55-named SoundFont profile, not established chip-accurate Sound Canvas hardware emulation. |
-| SoundFont support | `v` | Implemented | Manifest-verified supplied SF2 assets staged outside Git. |
+| SoundFont support | `v` | Implemented | Manifest-verified SC-55 and Roland GM SF2 assets included in Git. |
 | External MIDI devices | `v` | Implemented | ALSA USB MIDI messages to external module; module audio is separate. |
 | MIDI device selection | `v` | Implemented | Stable destination picker, rescan, ambiguity protection and bounded boot retry. |
 | Audio latency configuration | `x` | Partial | Advanced mixer block/prebuffer INI values exist; no dedicated Pi-DOS latency UI/workflow. |

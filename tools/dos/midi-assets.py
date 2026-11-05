@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Import MIDI build inputs into assets/midi; binary payloads stay out of git."""
+"""Verify bundled MIDI assets or reimport them from a ScummVM asset directory."""
 import argparse
 import hashlib
 import json
@@ -20,7 +20,7 @@ def verify(path, item):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source', type=Path, help='ScummVM directory containing extra/ and soundfonts/')
+    parser.add_argument('--source', type=Path, help='ScummVM directory containing extra/ and optional soundfonts/')
     parser.add_argument('--install', type=Path, help='Copy verified assets to this directory')
     args = parser.parse_args()
     manifest = json.loads((ROOT / 'configs/midi-assets.json').read_text())
@@ -28,6 +28,8 @@ def main():
         asset = ASSETS / item['destination']
         if args.source:
             source = args.source / item['source']
+            if not source.exists() and item['source'].startswith('soundfonts/'):
+                source = asset  # Use the bundled SoundFont when no replacement is supplied.
             verify(source, item)
             asset.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile(dir=asset.parent, delete=False) as stream:

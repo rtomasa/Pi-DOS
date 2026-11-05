@@ -1,8 +1,5 @@
 /dl/
 /output/
-# User-supplied MIDI build inputs; keep the setup instructions tracked.
-/assets/midi/*
-!/assets/midi/README.md
 __pycache__/
 *.pyc
 

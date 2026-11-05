@@ -80,3 +80,12 @@ only its menu, guide, inventory and source record. Copyright remains with Future
 Crew, Triton, NoooN, Plant/EMF, CNCD and the respective contributors. Online
 availability does not establish permission to distribute every production in a
 public SD image. Review each original notice under the existing release gate.
+
+The two SoundFonts in `assets/midi/` (`SC55.SF2` and `GMROLAND.SF2`) are tracked
+unchanged copies of `Roland_SC-55.sf2` and `GM_Roland.sf2` from the maintainer's
+ScummVM asset set, verified against `configs/midi-assets.json`. That source
+directory contained no accompanying license files; no redistribution permission
+or new license is inferred from including these files. Their public-release
+review remains open. The four MT-32/CM-32L ROMs in `assets/midi/` are likewise
+included and verified against that manifest; their inclusion does not establish
+redistribution permission or select a license for them.
