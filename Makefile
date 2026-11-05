@@ -7,6 +7,9 @@ help:
 	@echo 'make dos-config - rebuild PIDOSCFG.EXE (requires Open Watcom)'
 	@echo 'make windows-video DRIVERS=/path/to/DRIVERS - build the Win3.1 S3/ET4000 installer'
 	@echo 'make windows-drivers DRIVERS=/path/to/DRIVERS - build unified Win3.1 driver/configuration app'
+	@echo 'make release DRIVERS=/path/to/DRIVERS - build fresh image.xz, guide PDF and Windows drivers locally'
+	@echo 'make release-upload DRIVERS=/path/to/DRIVERS - build and update the GitHub rolling release'
+	@echo 'make release-upload-only - upload/retry the last verified release bundle'
 	@echo 'make demos - fetch and package the curated DOS demoscene pack with text menu'
 	@echo 'make fetch   - fetch and verify pinned Phase 0 sources'
 	@echo 'make sdl2    - build private native SDL2 with required backends'
@@ -62,3 +65,13 @@ image:
 
 image-diagnostic:
 	bash tools/image/build.sh diagnostic
+
+.PHONY: release release-upload release-upload-only
+release:
+	python3 tools/release/release.py --drivers "$(DRIVERS)"
+
+release-upload:
+	python3 tools/release/release.py --drivers "$(DRIVERS)" --repo "$(RELEASE_REPO)" --upload
+
+release-upload-only:
+	python3 tools/release/release.py --repo "$(RELEASE_REPO)" --upload-only

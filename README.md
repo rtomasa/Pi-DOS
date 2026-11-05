@@ -268,6 +268,8 @@ The supervisor remains in charge of the runtime and clean shutdown.
   commands, configuration, storage and troubleshooting.
 - [Image build guide](docs/buildroot-pi5.md) — image layout, diagnostics and
   hardware integration; the filename predates the shared ARM64 image.
+- [Local release procedure](docs/releases.md) — build a fresh compressed SD
+  image, PDF guide and Windows driver ZIP, and update one GitHub release.
 - [Setup utility](src/doscfg/README.md) — settings, CPU profiles and rebuilding
   `PIDOSCFG` with Open Watcom.
 - [Networking](docs/networking.txt), [CONFIG.SYS](docs/config-sys.md) and

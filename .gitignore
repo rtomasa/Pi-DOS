@@ -1,4 +1,5 @@
 /dl/
+# Includes local release bundles, clean build snapshots, logs and virtualenvs.
 /output/
 __pycache__/
 *.pyc
