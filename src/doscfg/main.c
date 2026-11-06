@@ -379,7 +379,7 @@ static void field_value(const Field *field,char *result) {
  if(field->key==K_RAM && strcmp(cfg_get(K_RAM_KB),"0")) {
   sprintf(result,"%.12s MiB + %.12s KiB",value=cfg_get(K_RAM),cfg_get(K_RAM_KB)); return;
  }
- if(field->type==FIELD_CHECKBOX) { strcpy(result,equal(value,"true")?"[X]":"[ ]"); return; }
+ if(field->type==FIELD_CHECKBOX) { strcpy(result,cfg_enabled(field->key)?"[X]":"[ ]"); return; }
  if(field->type==FIELD_VOODOO) { strcpy(result,equal(value,"false")?"[ ]":"[X]"); return; }
  strncpy(result,value,CFG_VALUE_SIZE-1); result[CFG_VALUE_SIZE-1]=0;
  if(field->type==FIELD_VOLUME || field->type==FIELD_TEXT) return;
@@ -534,7 +534,7 @@ static void edit_field(const Field *field) {
  char value[CFG_VALUE_SIZE]; int card;
  if(field->type==FIELD_NET_NIC || field->type==FIELD_NET_TCP || field->type==FIELD_NET_IPX) { network_settings(field->type); return; }
  if(field->type==FIELD_MIDI_SETTINGS) { midi_settings(); return; }
- if(field->type==FIELD_CHECKBOX) { cfg_set(field->key,equal(cfg_get(field->key),"true")?"false":"true"); return; }
+ if(field->type==FIELD_CHECKBOX) { cfg_set(field->key,cfg_enabled(field->key)?"false":"true"); return; }
  if(field->type==FIELD_VOODOO) { cfg_toggle_voodoo(); return; }
  if(field->type==FIELD_TEXT) {
   strcpy(value,cfg_get(field->key)); if(!input_dialog(field->label,value)) return;
@@ -621,7 +621,7 @@ static int field_offset(int n,int focus) {
  return focus>=FORM_VISIBLE_FIELDS?focus-FORM_VISIBLE_FIELDS+1:0;
 }
 static void draw_page(int page,int focus,const char *path) {
- Field fields[FORM_MAX_FIELDS]; int i,n=page==PAGE_CPU?1+form_cpu_fields(fields):page==PAGE_MEMORY?1:form_fields(page,fields);
+ Field fields[FORM_MAX_FIELDS]; int i,n=page==PAGE_CPU?1+form_cpu_fields(fields):page==PAGE_MEMORY?1+form_fields(page,fields):form_fields(page,fields);
  int offset=field_offset(n,focus),row;
  int selected=page==PAGE_MEMORY?memory_selected():cfg_profile(); char value[CFG_VALUE_SIZE],line[160];
  mouse_visible(0); fill(0,0,80,25,NORMAL); fill(0,0,80,1,SELECTED);
@@ -655,7 +655,13 @@ static void draw_page(int page,int focus,const char *path) {
    sprintf(value,"%s MiB%s",memory_sizes[i],!strcmp(memory_sizes[i],cfg_specs[K_RAM].default_value)?" (default)":"");
    text(12,5+i,value,color,58);
   }
-  if(selected<0) {
+  for(i=0;i<n-1;++i) {
+   unsigned char color=focus==i+1?SELECTED:NORMAL;
+   field_value(&fields[i],value); fill(5,14+i,70,1,color);
+   text(7,14+i,fields[i].label,color,28); text(37,14+i,value,color,37);
+  }
+  if(focus>0 && focus<n) text(4,18,fields[focus-1].help,PANEL,72);
+  else if(selected<0) {
    sprintf(line,"Custom RAM: %.12s MiB + %.12s KiB. Choose a size to replace it.",cfg_get(K_RAM),cfg_get(K_RAM_KB));
    text(4,18,line,PANEL,72);
   } else text(4,18,"Above 16 MiB can break older software. Use 16 unless an app needs more.",PANEL,72);
@@ -701,7 +707,7 @@ static int setup(const char *path) {
  screen_start();
  for(;;) {
   if(redraw) { mouse_visible(0); live_update(page==PAGE_MIXER); mouse_visible(1); }
-  n=page==PAGE_CPU?1+form_cpu_fields(fields):page==PAGE_MEMORY?1:form_fields(page,fields);
+  n=page==PAGE_CPU?1+form_cpu_fields(fields):page==PAGE_MEMORY?1+form_fields(page,fields):form_fields(page,fields);
   if(focus>=n+4) focus=0;
   if(redraw) { draw_page(page,focus,path); redraw=0; }
   key=key_read(0); ch=key&255; scan=key>>8; action=0;
@@ -714,7 +720,7 @@ static int setup(const char *path) {
    else if(scan==63 || scan==64) { page=(page+(scan==64?1:PAGE_COUNT-1))%PAGE_COUNT; focus=0; continue; }
    else if(ch==9) focus=(focus+1)%(n+4);
    else if(scan==15 && !ch) focus=(focus+n+3)%(n+4);
-   else if((page==PAGE_MEMORY || (page==PAGE_CPU && focus==0)) && (scan==72 || scan==80 || scan==71 || scan==79)) {
+   else if((page==PAGE_MEMORY || page==PAGE_CPU) && focus==0 && (scan==72 || scan==80 || scan==71 || scan==79)) {
     focus=0; selected=page==PAGE_CPU?cfg_profile():memory_selected();
     count=page==PAGE_CPU?PROFILE_COUNT:MEMORY_COUNT;
     if(scan==71) selected=0; else if(scan==79) selected=count-1;
@@ -726,7 +732,7 @@ static int setup(const char *path) {
    else if(page==PAGE_MIXER && focus<n && (scan==75 || scan==77)) step_volume(&fields[focus],scan==75?-1:1);
    else if(ch==13 || ch==' ') {
     if(focus==n) action=3; else if(focus==n+1) action=4; else if(focus==n+2) action=1; else if(focus==n+3) action=2;
-    else if(page==PAGE_CPU && focus>0) edit_field(&fields[focus-1]);
+    else if((page==PAGE_CPU || page==PAGE_MEMORY) && focus>0) edit_field(&fields[focus-1]);
     else if(page!=PAGE_CPU && page!=PAGE_MEMORY) edit_field(&fields[focus]);
    }
   }
@@ -746,6 +752,7 @@ static int setup(const char *path) {
      if(page==PAGE_CPU && y<5+PROFILE_COUNT) { cfg_select_cpu(y-5); focus=0; }
      else if(page==PAGE_CPU && y>=14 && y<14+n-1) { focus=y-13; edit_field(&fields[focus-1]); }
      else if(page==PAGE_MEMORY && y<5+MEMORY_COUNT) { select_memory(y-5); focus=0; }
+     else if(page==PAGE_MEMORY && y>=14 && y<14+n-1) { focus=y-13; edit_field(&fields[focus-1]); }
      else if(page!=PAGE_CPU && page!=PAGE_MEMORY && y<5+FORM_VISIBLE_FIELDS && y-5+field_offset(n,focus)<n) {
       focus=y-5+field_offset(n,focus);
       if(page==PAGE_MIXER && x>=37 && x<42) step_volume(&fields[focus],-1);

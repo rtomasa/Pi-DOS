@@ -7,7 +7,7 @@ Up/Down or Home/End chooses a CPU profile or RAM size. Other lists support
 typing to search, arrows, Home/End and PgUp/PgDn. Click an item to select it.
 F2 or Alt+S saves ALL pages and stays in setup. F4 applies hardware and shortcuts.
 Escape, Alt+C or Alt+X closes setup without saving unapplied edits.
-Apply does not save PIDOS.CFG. CPU and sound apply live; RAM/video/Voodoo
+Apply does not save PIDOS.CFG. CPU and sound apply live; RAM/XMS/EMS/video/Voodoo
 and transitions to/from 286 ask before restarting DOS only, without rebooting
 the Pi. DOS startup files run again. Other System, Input and Network changes
 need Save and REBOOT. Apply needs writable C:\TEMP and is unavailable in Windows.
@@ -49,6 +49,12 @@ device number. An unavailable output stays silent for that boot.
 
 RAM: 1, 2, 4, 8, 16 (default), 32, 64 or 128 MiB. Above 16 MiB can break
 older programs; some need less. The selected CPU must address that RAM.
+Enable XMS and Enable EMS are independent checkboxes below the RAM sizes.
+Both start enabled. Tab to a checkbox and press Space or Enter, or click it.
+Changing RAM leaves these switches unchanged. Apply confirms a DOS-session
+restart for either switch; Save keeps them for future boots. Restore defaults
+on Memory selects 16 MiB and enables both. Existing advanced EMS modes stay
+unchanged until edited; re-enabling EMS selects the standard enabled mode.
 
 Video: use the same selection list as Sound to choose IBM CGA, Hercules,
 Tandy, IBM EGA, IBM VGA, Tseng Labs ET4000, S3 Trio64 (default), VESA VBE 3.0

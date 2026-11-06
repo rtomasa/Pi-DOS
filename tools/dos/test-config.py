@@ -423,4 +423,42 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert get('K_NET_IRQ') == b'10' and get('K_NET_WINDOWS') == b'C:\\WINDOWS'
     assert editor.cfg_save_changes(encoded)
 
+    # Memory-manager switches preserve existing advanced EMS modes until edited.
+    memory_path = temporary / 'MEMORY.CFG'
+    memory_before = (b'# keep memory configuration\r\n[dos]\r\nxms=true\r\n'
+                     b'ems=emsboard\r\numb=false\r\n[dos]\r\nxms=true\r\n')
+    memory_path.write_bytes(memory_before)
+    memory_encoded = str(memory_path).encode()
+    assert editor.cfg_load(memory_encoded)
+    assert editor.cfg_enabled(keys['K_XMS']) and editor.cfg_enabled(keys['K_EMS'])
+    memory_fields = (Field * 20)()
+    assert editor.form_fields(1, memory_fields) == 2
+    assert [f.key for f in memory_fields[:2]] == [keys['K_XMS'], keys['K_EMS']]
+    assert all(f.type == 2 for f in memory_fields[:2])
+    assert set_value('K_RAM', b'32') and editor.cfg_save_changes(memory_encoded)
+    assert b'ems=emsboard\r\n' in memory_path.read_bytes()
+    for name in ('K_XMS', 'K_EMS'):
+        assert not set_value(name, b'invalid')
+        assert set_value(name, b'false')
+        assert not editor.cfg_enabled(keys[name])
+        assert editor.cfg_apply_key(keys[name])
+    assert editor.cfg_save_changes(memory_encoded) and editor.cfg_load(memory_encoded)
+    saved_memory = memory_path.read_bytes()
+    assert saved_memory.count(b'xms=false\r\n') == 2
+    assert b'ems=false\r\n' in saved_memory and b'umb=false\r\n' in saved_memory
+    assert get('K_XMS') == get('K_EMS') == b'false'
+    editor.cfg_reset_page(1)
+    assert get('K_XMS') == get('K_EMS') == b'true' and get('K_RAM') == b'16'
+    for mode, enabled in ((b'emsboard', 1), (b'emm386', 1), (b'1', 1), (b'0', 0)):
+        assert set_value('K_EMS', mode)
+        assert editor.cfg_enabled(keys['K_EMS']) == enabled
+    session_path = temporary / 'memory-session.cfg'
+    assert editor.cfg_export_apply(str(session_path).encode())
+    assert b'xms=true\r\n' in session_path.read_bytes()
+    assert b'ems=0\r\n' in session_path.read_bytes()
+    assert editor.cfg_load(memory_encoded)
+    assert editor.cfg_import_apply(str(session_path).encode())
+    assert get('K_XMS') == b'true' and get('K_EMS') == b'0'
+    assert editor.cfg_load(encoded)
+
 print('PASS: config preservation/recovery, existing pages, input and networking mode validation.')

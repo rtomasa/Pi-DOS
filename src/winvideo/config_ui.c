@@ -182,7 +182,18 @@ BOOL FAR PASCAL __export ValueDialog(HWND dialog, UINT message, WPARAM wparam, L
 static void fill_fields(HWND dialog, PageState FAR *state, int selected)
 {
     char text[180];
-    int i;
+    int i, memory = state->page == PAGE_MEMORY && !state->branch;
+    RECT list = {10, 33, 288, 143};
+    if (memory) list.bottom = 99;
+    MapDialogRect(dialog, &list);
+    MoveWindow(GetDlgItem(dialog, IDC_FIELDS), list.left, list.top,
+               list.right - list.left, list.bottom - list.top, TRUE);
+    ShowWindow(GetDlgItem(dialog, IDC_XMS), memory ? SW_SHOW : SW_HIDE);
+    ShowWindow(GetDlgItem(dialog, IDC_EMS), memory ? SW_SHOW : SW_HIDE);
+    if (memory) {
+        CheckDlgButton(dialog, IDC_XMS, cfg_enabled(K_XMS));
+        CheckDlgButton(dialog, IDC_EMS, cfg_enabled(K_EMS));
+    }
     if (state->page == PAGE_MIXER) form_mixer_channels(pv_volume_channels());
     if (state->branch == FIELD_MIDI_SETTINGS) state->count = form_midi_fields(state->fields);
     else if (state->branch) state->count = form_network_fields(state->branch, state->fields);
@@ -196,7 +207,10 @@ static void fill_fields(HWND dialog, PageState FAR *state, int selected)
         f->key = K_RAM; f->type = FIELD_CHOICE; f->label = "Memory (MiB)";
         f->choices = "1|2|4|8|16|32|64|128"; f->catalog = NULL;
         f->help = "RAM available to DOS and Windows. CPU address limits are checked when saving.";
-        state->count = 1;
+        form_fields(PAGE_MEMORY, state->fields + 1);
+        state->fields[1].help = "Extended memory support. Enabled by default; save and reboot Pi-DOS.";
+        state->fields[2].help = "Expanded memory support. Enabled by default; save and reboot Pi-DOS.";
+        state->count = 1; /* XMS/EMS have native checkboxes below the RAM list. */
     } else state->count = form_fields(state->page, state->fields);
     SendDlgItemMessage(dialog, IDC_FIELDS, LB_RESETCONTENT, 0, 0);
     for (i = 0; i < state->count; ++i) {
@@ -256,6 +270,12 @@ BOOL FAR PASCAL __export OptionsDialog(HWND dialog, UINT message, WPARAM wparam,
                            MB_OKCANCEL | MB_ICONQUESTION) == IDOK) {
                 cfg_reset_page(state->page); fill_fields(dialog, state, 0);
             }
+            return TRUE;
+        }
+        if (!state->branch && state->page == PAGE_MEMORY && (wparam == IDC_XMS || wparam == IDC_EMS)) {
+            i = wparam == IDC_XMS ? 1 : 2;
+            cfg_set(state->fields[i].key, IsDlgButtonChecked(dialog, wparam) ? "true" : "false");
+            SetDlgItemText(dialog, IDC_HELP, state->fields[i].help);
             return TRUE;
         }
         selected = (int)SendDlgItemMessage(dialog, IDC_FIELDS, LB_GETCURSEL, 0, 0);

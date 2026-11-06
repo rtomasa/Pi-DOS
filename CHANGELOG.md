@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Memory options:** Enable or disable XMS and EMS in DOS setup and the Windows
+  tool. DOS Apply restarts the DOS session; Windows saves for the next Pi-DOS boot.
 - **Apply settings:** Use **F4** in DOS `PIDOSCFG` to apply changes without
   rebooting the Raspberry Pi. Some hardware changes require restarting DOS.
 - **Turbo mode:** Choose a faster speed for your CPU and toggle it with

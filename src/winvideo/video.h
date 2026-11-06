@@ -22,6 +22,8 @@
 #define IDC_EDIT 213
 #define IDC_HELP 214
 #define IDC_DEFAULTS 215
+#define IDC_XMS 216
+#define IDC_EMS 217
 #define IDD_VALUE 220
 #define IDC_VALUES 221
 #define IDC_VALUE 222

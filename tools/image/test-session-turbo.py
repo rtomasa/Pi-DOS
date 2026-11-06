@@ -87,6 +87,14 @@ int SDL_PollEvent(SDL_Event *event) {
     static int (*real_poll)(SDL_Event *);static int toggle=0,phase=0,ui=0;
     if(!real_poll) real_poll=dlsym(RTLD_NEXT,"SDL_PollEvent");
     int result=real_poll(event);if(result || !event) return result;
+    if(ui<14 && exists("UIMEM")) {
+        static const SDL_Scancode scans[]={SDL_SCANCODE_F6,SDL_SCANCODE_TAB,SDL_SCANCODE_SPACE,
+            SDL_SCANCODE_TAB,SDL_SCANCODE_SPACE,SDL_SCANCODE_F4,SDL_SCANCODE_Y};
+        static const SDL_Keycode symbols[]={SDLK_F6,SDLK_TAB,SDLK_SPACE,SDLK_TAB,SDLK_SPACE,SDLK_F4,SDLK_y};
+        SDL_zero(*event);event->type=(ui%2)?SDL_KEYUP:SDL_KEYDOWN;event->key.type=event->type;
+        event->key.keysym.scancode=scans[ui/2];event->key.keysym.sym=symbols[ui/2];
+        ui++;return 1;
+    }
     if(ui<4 && exists("UIEXIT")) {
         SDL_zero(*event);event->type=(ui%2)?SDL_KEYUP:SDL_KEYDOWN;
         event->key.type=event->type;
@@ -192,6 +200,20 @@ assert (case/'CHECK.OUT').read_text().strip()=='RESTART'
 assert (case/'run/pi-dos-session-restart').exists()
 assert b'memsize=32' in (case/'run/pidos-session.cfg').read_bytes()
 assert not (case/'AFTER.OUT').exists()
+for manager in ('xms', 'ems'):
+    case = run('disable-'+manager, request+'[dos]\n'+manager+'=false\n', [
+        'Z:\\SYSTEM\\PIAPPLY.COM /CHECK', 'TYPE C:\\TEMP\\PIDAPPLY.STA >CHECK.OUT',
+        'Z:\\SYSTEM\\PIAPPLY.COM', 'ECHO should-not-run >AFTER.OUT', 'EXIT'])
+    assert (case/'CHECK.OUT').read_text().strip()=='RESTART'
+    assert (case/'run/pi-dos-session-restart').exists()
+    assert (manager+'=false').encode() in (case/'run/pidos-session.cfg').read_bytes()
+    assert not (case/'AFTER.OUT').exists()
+case = run('dos-memory-ui', request, ['ECHO 1>UIMEM', 'PIDOSCFG.EXE',
+    'ECHO should-not-run >AFTER.OUT', 'EXIT'], ui=True)
+assert (case/'run/pi-dos-session-restart').exists(), case/'run.log'
+assert b'xms=false' in (case/'run/pidos-session.cfg').read_bytes()
+assert b'ems=false' in (case/'run/pidos-session.cfg').read_bytes()
+assert not (case/'AFTER.OUT').exists()
 case = run('286-boundary', request.replace('cputype=486','cputype=286').replace(
     'core=dynamic_rec','core=normal').replace('cycles=fixed 23880','cycles=fixed 1510').replace(
     'turbo_mhz=100','turbo_mhz=25'), [
@@ -240,4 +262,4 @@ subprocess.run([str(cxx), '-std=c++14', '-O2', '-Wall', '-Wextra', '-Werror',
                 str(notice), '-lSDL2', '-o', str(notice_binary)], check=True)
 subprocess.run([str(qemu), '-L', str(target), '-E', 'LD_LIBRARY_PATH='+str(args.sdl_library_path.resolve()),
                 str(notice_binary)], env=dict(os.environ, SDL_VIDEODRIVER='dummy'), check=True)
-print('PASS: ARM64 Apply, sound environment, Turbo on/off/repeat suppression, restart request, invalid-setting rejection, and CRT/LCD notification restoration: '+str(work))
+print('PASS: ARM64 Apply, XMS/EMS checkboxes and restart requests, sound environment, Turbo on/off/repeat suppression, invalid-setting rejection, and CRT/LCD notification restoration: '+str(work))

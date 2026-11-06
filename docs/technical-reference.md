@@ -1,7 +1,7 @@
 # Pi-DOS technical reference and manual foundation
 
 Version covered: **Pi-DOS 1.1 plus unreleased changes**. Source review:
-**6 November 2026**. Apply, Turbo and storage-recovery improvements describe
+**6 November 2026**. Apply, Turbo, XMS/EMS controls and storage-recovery improvements describe
 the current source tree; they are newer than the published 1.1 build. See the
 [changelog](../CHANGELOG.md) for the release boundary.
 The original hardware evidence, feature audit and development history use the
@@ -416,7 +416,7 @@ effect on the next boot unless imported through a supported setup operation.
 | Settings | DOS Apply behavior |
 | --- | --- |
 | CPU profile, Turbo, emulated sound/MIDI and mixer | Apply immediately; transitions to/from a 286 require a DOS-session restart |
-| DOS RAM, emulated video adapter and Voodoo | Confirm and restart the DOS session, without rebooting the Pi |
+| DOS RAM, XMS/EMS, emulated video adapter and Voodoo | Confirm and restart the DOS session, without rebooting the Pi |
 | System shortcuts, including Turbo | Apply immediately |
 | CRT/LCD output, LCD overlay, physical audio output, regional settings, diagnostics, controllers and networking | Save and reboot the Pi |
 
@@ -457,6 +457,7 @@ until Save or Apply.
 | CPU | Board defaults: Pi 2/3 386DX/33 (`fixed 6075`), Pi 4 486DX2/66 (`fixed 23880`), Pi 5 Pentium 120 (`fixed 64180`); all `dynamic_rec` |
 | Turbo | Disabled (`turbo_mhz=0`); shortcut Ctrl+Alt+T |
 | RAM | 16 MiB |
+| XMS / EMS | Both enabled (`[dos] xms=true`, `ems=true`) |
 | Video | S3 Trio64; software Voodoo enabled, max memory enabled, Glide passthrough disabled |
 | Monitor | CRT; retained LCD preferences start at 1024x768, 4:3, linear filtering off |
 | Sound | Sound Blaster Pro 2, base 220h, IRQ 7, DMA 1; PC speaker enabled |
@@ -633,6 +634,25 @@ the DOS engine. Their availability depends on configuration and application
 requirements. The project does not replace DOS/4GW, DOS extenders or Windows
 media with bundled licensed products. TSR and device-driver compatibility is
 application-dependent.
+
+The Memory page adds **Enable XMS** and **Enable EMS** checkboxes below the RAM
+list. Both inherit `true` when absent. They independently control the runtime's
+`[dos] xms` and `ems` properties; selecting a RAM size does not alter them.
+Memory Restore defaults restores 16 MiB, clears `memsizekb` and enables both.
+Tab focuses the checkboxes; Space/Enter and mouse clicks toggle them.
+
+DOS Apply exports both values through the filtered session configuration and
+requires a confirmed DOS-session restart when either changes, even though the
+upstream properties are marked `WhenIdle`. Recreating the DOS kernel ensures
+memory-manager entry points, allocations and guest drivers start consistently.
+Windows uses native checkboxes in the Memory category, with save-only behavior
+for the next Pi-DOS boot.
+
+Existing `ems=emsboard` and `ems=emm386` modes display as enabled and survive
+unrelated edits. The shared editor also recognizes the runtime's `1`/`0`
+aliases. Explicitly toggling either checkbox writes `true` or `false`;
+re-enabling EMS selects the standard `true` mode. These controls do not install
+HIMEM.SYS/EMM386.EXE or change unrelated UMB/VCPI settings.
 
 ### 7.3 Virtual PC hardware and correctness work
 
@@ -1201,7 +1221,7 @@ The handoff requires writable `C:\TEMP`. `PIAPPLY /CHECK` writes `LIVE`,
 before submitting a restart. Requests are bounded to 24 KiB, reject embedded
 NULs and pass both shared configuration and runtime-property validation.
 
-RAM, video adapter, Voodoo and transitions to/from 286 stage
+RAM, XMS/EMS, video adapter, Voodoo and transitions to/from 286 stage
 `/run/pidos-session.cfg`, create `/run/pi-dos-session-restart`, and leave through
 normal emulator teardown. PID 1
 recognizes the marker only after a successful runtime exit, resolves a filtered
@@ -1787,8 +1807,8 @@ it does not assert that all related upstream code has been removed.
 | x87 FPU emulation | `v` | Implemented | Inherited x87 plus Pi-DOS overlapping-register alias fix for optimized ARM64 builds. |
 | Conventional memory (640 KB) | `v` | Inherited | DOS memory model supplied by engine; usable free space depends on configuration. |
 | Upper memory (UMB) | `v` | Inherited | Engine memory-manager capability; configuration/application dependent. |
-| Extended memory (XMS) | `v` | Inherited | Engine memory-manager capability; managed RAM size does not prove every XMS client. |
-| Expanded memory (EMS) | `v` | Inherited | Engine capability; some bundled demos require it for Sound Blaster music. |
+| Extended memory (XMS) | `v` | Implemented | Inherited engine manager with a DOS/Windows Memory checkbox; DOS Apply restarts the session. Individual clients still need checks. |
+| Expanded memory (EMS) | `v` | Implemented | Inherited engine manager with an independent Memory checkbox; some bundled demos require it for Sound Blaster music. |
 | High Memory Area (HMA) | `v` | Inherited | Engine DOS memory capability; not a separate Pi-DOS hardware layer. |
 | DPMI support | `v` | Inherited | Engine protected-mode services; verify particular clients/extenders. |
 | DOS extenders (DOS/4GW, etc.) | `v` | Inherited | Engine compatibility path, without promising or bundling every commercial extender. |
@@ -2051,7 +2071,8 @@ the subsequent changes; this is not a second commit-by-commit audit.
 | `0533e66`, `b54c5bd` | 2026-11-05 | Fix benchmark downloads and refresh the README/user guide for 1.1. |
 | `d5c5cda`, `e1da368`, `342bbe9` | 2026-11-05 | Add local/rolling release packaging, bundle driver inputs and automate PDF dependencies. Published 1.1 was built from `342bbe9`. |
 | `3dc8c53` | 2026-11-05 | Add storage-expansion feedback and RAM-backed recovery diagnostics after the published 1.1 build. |
-| Current working tree | 2026-11-06 review | Add DOS Apply/session restart, speed-only Turbo, configurable shortcut and CRT/LCD notice; retain save-only Windows hardware settings. Remove the separate Normal speed field, filter Turbo to faster choices and rename DOS Cancel to Exit. |
+| Apply/Turbo development | 2026-11-06 review | Add DOS Apply/session restart, speed-only Turbo, configurable shortcut and CRT/LCD notice; retain save-only Windows hardware settings. Remove the separate Normal speed field, filter Turbo to faster choices and rename DOS Cancel to Exit. |
+| Current working tree | 2026-11-06 review | Add independent XMS/EMS checkboxes in DOS and Windows Memory settings, preserving enabled defaults and advanced EMS modes. DOS Apply restarts the session; Windows saves for the next Pi-DOS boot. |
 
 ### Source precedence and supporting references
 

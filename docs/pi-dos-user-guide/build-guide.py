@@ -95,7 +95,7 @@ TEMPLATE = r'''// Generated from pi-dos-user-guide.md by build-guide.py.
 #v(6mm)
 #text(size: 10pt)[Edition 3 · 6 November 2026\ Source review: Pi-DOS 1.1 plus unreleased changes]
 #v(8mm)
-#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
+#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo, XMS/EMS controls and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
 #v(4mm)
 #text(size: 10pt)[Names of example programs and files are illustrative. The MIDI SoundFonts and ROMs are bundled; games, Windows and some sound patches must be supplied separately where required.]
 #v(4mm)

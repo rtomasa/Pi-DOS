@@ -2,10 +2,10 @@
   "target": "16-bit DOS MZ, 8086 instruction set, compact memory model, no FPU/extender",
   "source_sha256": {
     "VERSION": "1523e9e982ff804c6d979e1bb2c6f3d7bae35307e8ce458bffc0d12a442b98da",
-    "src/doscfg/main.c": "7b6bf785a1f9b4b483bc80fac73a5399874b5aab77055a773ca7704185a415a3",
-    "src/doscfg/config.c": "248b813b54366065b7d7933dd56cca327e6d8cf49a062fd2fb236f19a03aa851",
-    "src/doscfg/config.h": "728fc77cc4daff84efe4da1b119029400adc02ef57d3cc236b7b07f3a74e385e",
-    "src/doscfg/forms.c": "f23290d56beaecccffd034699f1c445bfa27b7b4de45e8bb6b21ee4bfc844646",
+    "src/doscfg/main.c": "5915a857a4bafa34386daa3194d0723075b1a15b55aa7f26c00ca2d54056d6b5",
+    "src/doscfg/config.c": "cdebbe48cac031abf937a3e551b7140960e113b9dbbda416959d1effef93cd7b",
+    "src/doscfg/config.h": "dfcdf9d6deee8307c0ac833bf9257950af79010042179f837dd04e29c3373929",
+    "src/doscfg/forms.c": "b47571a2fec4cb06aec255d22a96d21ecea84336eda09416807c7d9ac40234bd",
     "src/doscfg/forms.h": "46fd450e930f29d0356dc696df75890649457a9f891fc5d25540b401a82183ec",
     "src/doscfg/live.c": "79dd7e3efe6b417b308f28ea70a4a0c0534b3b6343d4711f7cbfb193bea6a9f1",
     "src/doscfg/live.h": "d8515b3a3430ba78ab7bd5f38c3aafd6bcc38959da8ed8d4c980ac08237736a1",
@@ -23,5 +23,5 @@
     "tools/dos/toolchain.json": "13cbef97b8c3607083dbe8cddc9e971705292942ae2f76e8c9cdf197a3b3bd50"
   },
   "compiler_driver_sha256": "9bf1c208df56c8c154e08a4c42b05183b39e1f3c21e2c3f3b4fa9a66b81aa071",
-  "executable_sha256": "4a821f7bd86bd6e53f9dc59b1b019fec654d2e3e756d1321d396060b83da05df"
+  "executable_sha256": "ea4a064713f31ac736f6af695e8455653fcb28ce44bc78e876c0fef738f687e5"
 }

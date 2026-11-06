@@ -86,7 +86,8 @@ const CfgSpec cfg_specs[K_COUNT] = {
  S("pidos","audio_output","hdmi",PAGE_SYSTEM),
  /* Missing on existing installations: never interrupt their normal startup. */
  S("pidos","first_boot","done",-1), S("pidos","cpu_default","done",-1),
- S("pidos","turbo_mhz","0",PAGE_CPU), S("pidos","shortcut_turbo","Ctrl+Alt+T",PAGE_SYSTEM)
+ S("pidos","turbo_mhz","0",PAGE_CPU), S("pidos","shortcut_turbo","Ctrl+Alt+T",PAGE_SYSTEM),
+ S("dos","xms","true",PAGE_MEMORY), S("dos","ems","true",PAGE_MEMORY)
 };
 const char *card_names[CARD_COUNT] = {"None", "Tandy sound", "AdLib",
  "Creative Game Blaster / CMS", "Sound Blaster 2.0", "Sound Blaster Pro 2 (default)",
@@ -130,6 +131,9 @@ static void limit_mixer(char *value) {
   sprintf(value,"%lu:%lu",left>100?100UL:left,right>100?100UL:right);
 }
 const char *cfg_get(int key) { return key>=0 && key<K_COUNT ? values[key] : ""; }
+int cfg_enabled(int key) {
+ return one_of(cfg_get(key),key==K_EMS?"true|1|emsboard|emm386":"true|1");
+}
 int cfg_changed(void) { int i; for(i=0;i<K_COUNT;++i) if(dirty[i]) return 1; return 0; }
 int cfg_is_dirty(int key) { return key>=0 && key<K_COUNT && dirty[key]; }
 /* Display the running mixer level without silently persisting it. */
@@ -188,6 +192,8 @@ int cfg_set(int key, const char *value) {
  case K_LCD_ASPECT: valid=one_of(value,"4:3|original"); break;
  case K_RAM: valid=one_of(value,"1|2|4|8|16|32|64|128"); break;
  case K_RAM_KB: valid=!strcmp(value,"0"); break;
+ case K_XMS: valid=one_of(value,"true|false|1|0"); break;
+ case K_EMS: valid=one_of(value,"true|false|emsboard|emm386|1|0"); break;
  case K_MACHINE: valid=video_profile_find(value)>=0; break;
  case K_VOODOO: valid=one_of(value,"software|false"); break;
  case K_MIDI_PROFILE: valid=midi_profile_find(value)>=0; break;
@@ -449,7 +455,7 @@ int cfg_apply_key(int key) {
   (key>=K_VOODOO && key<=K_GLIDE) ||
   (key>=K_MIDI_PROFILE && key<=K_MIDI_DELAY) ||
   (key>=K_SHORTCUT_REBOOT && key<=K_SHORTCUT_NEXT_FLOPPY) ||
-  key==K_TURBO_MHZ || key==K_SHORTCUT_TURBO;
+  key==K_TURBO_MHZ || key==K_SHORTCUT_TURBO || key==K_XMS || key==K_EMS;
 }
 int cfg_import_apply(const char *path) {
  FILE *in=fopen(path,"r"); char line[256],section[CFG_VALUE_SIZE]="",name[CFG_VALUE_SIZE],value[CFG_VALUE_SIZE];

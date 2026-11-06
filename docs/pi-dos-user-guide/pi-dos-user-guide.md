@@ -20,7 +20,7 @@ You do not need to understand the underlying system to begin. This guide starts 
 
 This edition describes Pi-DOS 1.1, reviewed against the project sources on 6 November 2026. It includes session Apply, CPU profiles and faster Turbo speeds, CRT/LCD Turbo notifications, the bundled MIDI assets and Windows configuration and mixer controls. Existing installations may retain earlier settings. When this guide says *default*, it means the current fresh-image setting, unless stated otherwise.
 
-Apply, Turbo and the storage-recovery improvements describe newer source changes
+Apply, Turbo, XMS/EMS controls and the storage-recovery improvements describe newer source changes
 that are not in the published 1.1 image. Use a build containing those changes
 for the corresponding instructions.
 
@@ -520,7 +520,7 @@ Some lists support searching by typing. Mouse selection is optional. F3 changes 
 | What you changed | How to activate it |
 | --- | --- |
 | CPU, Turbo, emulated sound/MIDI, mixer or shortcuts | Apply; switching to or from a 286 restarts DOS |
-| DOS memory, video adapter or Voodoo | Apply and confirm a DOS-session restart |
+| DOS memory, XMS/EMS, video adapter or Voodoo | Apply and confirm a DOS-session restart |
 | CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network | Save and reboot Pi-DOS |
 
 #### To change a setting
@@ -531,7 +531,7 @@ Some lists support searching by typing. Mouse selection is optional. F3 changes 
 4. Press **F2** to save settings for future boots, if wanted. Save stays in setup.
 5. Press **F4 / Apply** to activate CPU, sound, mixer and system-shortcut settings now.
 
-Apply closes setup after success. RAM size, video-card, Voodoo and transitions to/from 286 ask
+Apply closes setup after success. RAM size, XMS/EMS, video-card, Voodoo and transitions to/from 286 ask
 before restarting the DOS session; the Raspberry Pi remains running. This
 starts DOS and its startup files again, so session-only mounts and unsaved
 program state are lost. Apply is available outside Windows and needs writable
@@ -708,6 +708,25 @@ The Memory page offers 1, 2, 4, 8, 16, 32, 64 and 128 MiB. The default is **16 M
 4. Run the application and check its own requirements and messages.
 
 More memory is not always better. Some older programs fail with more than 16 MiB; others require a smaller configuration. Setup rejects sizes outside the selected CPU's address range.
+
+Below the RAM sizes, **Enable XMS** controls extended memory support and
+**Enable EMS** controls expanded memory support. Both are enabled by default.
+Keep them enabled unless a program needs one disabled. Changing a RAM size
+leaves these switches unchanged.
+
+#### To enable or disable XMS or EMS
+
+1. Open the Memory page in PIDOSCFG.
+2. Press Tab to focus **Enable XMS** or **Enable EMS**, then Space or Enter to
+   toggle it. You can also click the checkbox.
+3. Press **F2** if you want to keep the choice for future boots.
+4. Press **F4 / Apply** and confirm the DOS-session restart.
+
+Memory **Restore defaults** restores 16 MiB and enables both switches. In the
+Windows tool, open **Pi-DOS settings > Memory**, change the checkboxes and Save,
+then exit Windows and reboot Pi-DOS. The running Windows session is unchanged.
+Existing advanced EMS modes stay intact until edited; turning EMS off and on
+again selects the standard enabled mode.
 
 ### Conventional and extended memory
 
@@ -1554,6 +1573,7 @@ The directory C:\IMAGES used in examples is a suggested user-created location, n
 | CPU | Pi 2/3: 386DX/33; Pi 4: 486DX2/66; Pi 5: Pentium 120. See [Selecting a CPU profile](#selecting-a-cpu-profile). |
 | Turbo | Disabled; default shortcut Ctrl+Alt+T |
 | DOS RAM | 16 MiB |
+| XMS / EMS | Both enabled |
 | Video | S3 Trio64 |
 | Voodoo | Software enabled, maximum memory, Glide passthrough off |
 | Monitor | CRT |
@@ -1695,7 +1715,7 @@ Preserve the original notices included with tools and data. Consult the reposito
 
 The first edition was prepared from `technical-reference.md`, reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline `ff0c194`. This third edition updates user procedures against the Pi-DOS 1.1 source tree as of 6 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.
 
-The review includes unreleased Apply, Turbo and storage-recovery changes.
+The review includes unreleased Apply, Turbo, XMS/EMS controls and storage-recovery changes.
 Their inclusion here does not mean they shipped in the published 1.1 image.
 
 The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.
@@ -1788,6 +1808,7 @@ Use this alphabetical index to find a subject. Section links are clickable in th
 | Licenses and assets | [Software and asset notices](#software-and-asset-notices) |
 | Long filenames | [Filenames and extensions](#filenames-and-extensions) |
 | Memory | [Choosing DOS memory](#choosing-dos-memory) |
+| Memory managers, XMS / EMS | [Choosing DOS memory](#choosing-dos-memory) |
 | MIDI assets | [Choosing a MIDI profile](#choosing-a-midi-profile) |
 | Migration | [Moving from an older layout](#moving-from-an-older-layout) |
 | Mixer | [Adjusting the mixer](#adjusting-the-mixer) |

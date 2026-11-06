@@ -80,7 +80,7 @@
 #v(6mm)
 #text(size: 10pt)[Edition 3 · 6 November 2026\ Source review: Pi-DOS 1.1 plus unreleased changes]
 #v(8mm)
-#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
+#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo, XMS/EMS controls and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
 #v(4mm)
 #text(size: 10pt)[Names of example programs and files are illustrative. The MIDI SoundFonts and ROMs are bundled; games, Windows and some sound patches must be supplied separately where required.]
 #v(4mm)
@@ -122,7 +122,7 @@
 
 #p[#text("This edition describes Pi-DOS 1.1, reviewed against the project sources on 6 November 2026. It includes session Apply, CPU profiles and faster Turbo speeds, CRT/LCD Turbo notifications, the bundled MIDI assets and Windows configuration and mixer controls. Existing installations may retain earlier settings. When this guide says ")#emph[#text("default")]#text(", it means the current fresh-image setting, unless stated otherwise.")]
 
-#p[#text("Apply, Turbo and the storage-recovery improvements describe newer source changes") #text("that are not in the published 1.1 image. Use a build containing those changes") #text("for the corresponding instructions.")]
+#p[#text("Apply, Turbo, XMS/EMS controls and the storage-recovery improvements describe newer source changes") #text("that are not in the published 1.1 image. Use a build containing those changes") #text("for the corresponding instructions.")]
 
 #p[#text("This is a user guide rather than a record of development. It explains implemented behavior, but does not certify every Raspberry Pi, peripheral, game or Windows installation. Appendix E summarizes the hardware checks recorded in the technical reference and identifies features that still need physical confirmation.")]
 
@@ -590,7 +590,7 @@
 [#text("How to activate it")],
 [#text("CPU, Turbo, emulated sound/MIDI, mixer or shortcuts")],
 [#text("Apply; switching to or from a 286 restarts DOS")],
-[#text("DOS memory, video adapter or Voodoo")],
+[#text("DOS memory, XMS/EMS, video adapter or Voodoo")],
 [#text("Apply and confirm a DOS-session restart")],
 [#text("CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network")],
 [#text("Save and reboot Pi-DOS")],
@@ -600,7 +600,7 @@
 
 #items[#enum(start: 1, [#text("Run ")#inline-code("PIDOSCFG")#text(" and move to the relevant page.")], [#text("Select the control and choose the new value.")], [#text("Review any related settings on other pages.")], [#text("Press ")#strong[#text("F2")]#text(" to save settings for future boots, if wanted. Save stays in setup.")], [#text("Press ")#strong[#text("F4 / Apply")]#text(" to activate CPU, sound, mixer and system-shortcut settings now.")])]
 
-#p[#text("Apply closes setup after success. RAM size, video-card, Voodoo and transitions to/from 286 ask") #text("before restarting the DOS session; the Raspberry Pi remains running. This") #text("starts DOS and its startup files again, so session-only mounts and unsaved") #text("program state are lost. Apply is available outside Windows and needs writable") #inline-code("C:\\TEMP")#text(". Save your work and exit Windows before running DOS setup.")]
+#p[#text("Apply closes setup after success. RAM size, XMS/EMS, video-card, Voodoo and transitions to/from 286 ask") #text("before restarting the DOS session; the Raspberry Pi remains running. This") #text("starts DOS and its startup files again, so session-only mounts and unsaved") #text("program state are lost. Apply is available outside Windows and needs writable") #inline-code("C:\\TEMP")#text(". Save your work and exit Windows before running DOS setup.")]
 
 #p[#text("Apply does not save ")#inline-code("PIDOS.CFG")#text(". Unsaved applied settings remain active across") #text("Apply-triggered DOS-session restarts, until whole-Pi reboot or poweroff.") #text("Reopening DOS setup restores these applied values and marks differences from") #text("the saved file as unsaved, so F2 can keep them. Exit discards pending edits;") #text("it does not undo an earlier Save or successful Apply.")]
 
@@ -753,6 +753,14 @@
 #items[#enum(start: 1, [#text("Open the Memory page in PIDOSCFG.")], [#text("Choose a size supported by the selected CPU.")], [#text("Save if wanted, then Apply and confirm the DOS-session restart.")], [#text("Run the application and check its own requirements and messages.")])]
 
 #p[#text("More memory is not always better. Some older programs fail with more than 16 MiB; others require a smaller configuration. Setup rejects sizes outside the selected CPU's address range.")]
+
+#p[#text("Below the RAM sizes, ")#strong[#text("Enable XMS")]#text(" controls extended memory support and") #text("")#strong[#text("Enable EMS")]#text(" controls expanded memory support. Both are enabled by default.") #text("Keep them enabled unless a program needs one disabled. Changing a RAM size") #text("leaves these switches unchanged.")]
+
+#procedure[#text("To enable or disable XMS or EMS")]
+
+#items[#enum(start: 1, [#text("Open the Memory page in PIDOSCFG.")], [#text("Press Tab to focus ")#strong[#text("Enable XMS")]#text(" or ")#strong[#text("Enable EMS")]#text(", then Space or Enter to") #text("toggle it. You can also click the checkbox.")], [#text("Press ")#strong[#text("F2")]#text(" if you want to keep the choice for future boots.")], [#text("Press ")#strong[#text("F4 / Apply")]#text(" and confirm the DOS-session restart.")])]
+
+#p[#text("Memory ")#strong[#text("Restore defaults")]#text(" restores 16 MiB and enables both switches. In the") #text("Windows tool, open ")#strong[#text("Pi-DOS settings > Memory")]#text(", change the checkboxes and Save,") #text("then exit Windows and reboot Pi-DOS. The running Windows session is unchanged.") #text("Existing advanced EMS modes stay intact until edited; turning EMS off and on") #text("again selects the standard enabled mode.")]
 
 #heading(level: 2)[#text("Conventional and extended memory")]#label("h-conventional-and-extended-memory")
 
@@ -1629,6 +1637,8 @@
 [#text("Disabled; default shortcut Ctrl+Alt+T")],
 [#text("DOS RAM")],
 [#text("16 MiB")],
+[#text("XMS / EMS")],
+[#text("Both enabled")],
 [#text("Video")],
 [#text("S3 Trio64")],
 [#text("Voodoo")],
@@ -1818,7 +1828,7 @@
 
 #p[#text("The first edition was prepared from ")#inline-code("technical-reference.md")#text(", reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline ")#inline-code("ff0c194")#text(". This third edition updates user procedures against the Pi-DOS 1.1 source tree as of 6 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.")]
 
-#p[#text("The review includes unreleased Apply, Turbo and storage-recovery changes.") #text("Their inclusion here does not mean they shipped in the published 1.1 image.")]
+#p[#text("The review includes unreleased Apply, Turbo, XMS/EMS controls and storage-recovery changes.") #text("Their inclusion here does not mean they shipped in the published 1.1 image.")]
 
 #p[#text("The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.")]
 
@@ -1977,6 +1987,8 @@
 [#text("Long filenames")],
 [#link(label("h-filenames-and-extensions"))[#text("Filenames and extensions")]#text(" (p. ")#ref(label("h-filenames-and-extensions"), form: "page", supplement: none)#text(")")],
 [#text("Memory")],
+[#link(label("h-choosing-dos-memory"))[#text("Choosing DOS memory")]#text(" (p. ")#ref(label("h-choosing-dos-memory"), form: "page", supplement: none)#text(")")],
+[#text("Memory managers, XMS / EMS")],
 [#link(label("h-choosing-dos-memory"))[#text("Choosing DOS memory")]#text(" (p. ")#ref(label("h-choosing-dos-memory"), form: "page", supplement: none)#text(")")],
 [#text("MIDI assets")],
 [#link(label("h-choosing-a-midi-profile"))[#text("Choosing a MIDI profile")]#text(" (p. ")#ref(label("h-choosing-a-midi-profile"), form: "page", supplement: none)#text(")")],

@@ -1,6 +1,6 @@
 # Pi-DOS 1.1 User's Guide — editable sources
 
-This package contains the complete English user guide, its Typst layout and the small builder that keeps the Markdown and PDF editions in sync. Edition 3 is dated 6 November 2026 and covers Pi-DOS 1.1 plus unreleased Apply, Turbo and storage-recovery changes.
+This package contains the complete English user guide, its Typst layout and the small builder that keeps the Markdown and PDF editions in sync. Edition 3 is dated 6 November 2026 and covers Pi-DOS 1.1 plus unreleased Apply, Turbo, XMS/EMS controls and storage-recovery changes.
 
 ## Files
 

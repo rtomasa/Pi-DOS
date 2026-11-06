@@ -76,7 +76,8 @@ on the Pi and the program.
   drives. Mount disk/CD images or run from a ZIP with saves kept in a separate
   folder beside the archive. Supported CD images can also provide CD audio.
 - **Configure everything from DOS.** `PIDOSCFG` covers CPU, memory, video, sound,
-  mixer, input, networking and system settings. USB controllers, screenshots and
+  mixer, input, networking and system settings, including XMS/EMS switches.
+  USB controllers, screenshots and
   shortcuts for switching multi-disc image sets are supported. `EDIT` opens the
   editor; `DZ` opens Doszip Commander. `DEMOS` and `BENCH` launch the included
   demoscene and benchmark menus.

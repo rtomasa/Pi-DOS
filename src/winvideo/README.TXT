@@ -32,6 +32,9 @@ Save writes C:\SYSTEM\PIDOS.CFG using the same presets, validation and
 preservation rules as DOS PIDOSCFG. The prior configuration is kept in
 C:\SYSTEM\PIDOS.BAK. Close without saving discards pending changes.
 Exit Windows and reboot Pi-DOS to apply saved settings.
+Memory includes independent Enable XMS and Enable EMS checkboxes. Both default
+to enabled. These settings are saved for the next Pi-DOS boot; the running
+Windows session is unchanged. Memory Defaults restores 16 MiB and enables both.
 The CPU profile sets normal speed; Turbo offers only higher MHz presets
 for that CPU family. No separate Normal speed control is shown.
 System includes Turbo shortcut (default Ctrl+Alt+T). These additions remain

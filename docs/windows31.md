@@ -57,6 +57,12 @@ the replacement. Actual Windows guest upgrade/uninstall still needs checking.
 
 ### Shared Pi-DOS settings
 
+The Memory category includes native **Enable XMS** and **Enable EMS** checkboxes,
+both enabled by default. Save persists `[dos] xms` and `ems` for the next Pi-DOS
+boot; neither memory manager is changed in the running Windows session.
+Memory Defaults restores 16 MiB and enables both. Existing advanced EMS modes
+remain intact until edited; re-enabling the checkbox selects standard EMS.
+
 The CPU profile sets normal speed. Turbo offers only higher MHz choices for that CPU family;
 System includes the configurable Turbo shortcut (default Ctrl+Alt+T). These
 fields are saved for the next Pi-DOS startup. There is no new live Apply button

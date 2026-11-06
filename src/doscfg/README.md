@@ -32,7 +32,7 @@ Existing installations retain their configuration until explicitly changed.
 ## Apply and speed-only Turbo
 
 F4 / Apply activates CPU, sound, mixer and system-shortcut settings for the
-session; F2 saves all pages and stays in setup. RAM, video-card, Voodoo and transitions to/from 286
+session; F2 saves all pages and stays in setup. RAM, XMS/EMS, video-card, Voodoo and transitions to/from 286
 require confirmation before the supervisor starts a new DOS session,
 without rebooting Linux. Session settings live under `/run` and do not overwrite
 `PIDOS.CFG`. Reopening setup imports applied settings; Exit does not undo a
@@ -115,6 +115,16 @@ The Memory page lists every size directly, like CPU profiles, with keyboard
 and mouse selection. Help explains compatibility problems above 16 MiB. Selecting RAM clears the
 additional `memsizekb` override. Saving rejects RAM beyond the chosen CPU's
 address range.
+
+Below the RAM list, **Enable XMS** and **Enable EMS** independently control the
+built-in extended/expanded memory interfaces. Both default to enabled and are
+stored as `[dos] xms=true/false` and `ems=true/false`. Tab focuses each checkbox;
+Space, Enter or a mouse click toggles it. Selecting RAM leaves both switches
+unchanged; Memory Restore defaults enables both and restores 16 MiB. Apply
+requires a confirmed DOS-session restart when either changes. Windows exposes
+native checkboxes in its Memory category and saves them for the next Pi-DOS boot.
+Existing advanced `ems=emsboard`/`emm386` modes display as enabled and remain
+unchanged until explicitly edited; re-enabling a checkbox selects `ems=true`.
 
 The Video page uses the same selection-list control as Sound: IBM CGA,
 Hercules, Tandy, IBM EGA, IBM VGA, Tseng Labs ET4000, S3 Trio64 (default),

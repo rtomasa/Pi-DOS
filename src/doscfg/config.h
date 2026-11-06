@@ -26,7 +26,8 @@ enum {
     K_IPX, K_IPX_MODE, K_IPX_SERVER, K_IPX_PORT, K_NE2000, K_NET_BACKEND,
     K_NET_BASE, K_NET_IRQ, K_NET_MAC, K_NET_INTERFACE, K_NET_STARTUP,
     K_NET_IP, K_NET_MASK, K_NET_GATEWAY, K_NET_DNS, K_NET_TCP_PORTS, K_NET_UDP_PORTS,
-    K_NET_IPX_PATH, K_NET_IPX_FRAME, K_NET_WINDOWS, K_AUDIO_OUTPUT, K_FIRST_BOOT, K_CPU_DEFAULT, K_TURBO_MHZ, K_SHORTCUT_TURBO, K_COUNT
+    K_NET_IPX_PATH, K_NET_IPX_FRAME, K_NET_WINDOWS, K_AUDIO_OUTPUT, K_FIRST_BOOT, K_CPU_DEFAULT, K_TURBO_MHZ, K_SHORTCUT_TURBO,
+    K_XMS, K_EMS, K_COUNT
 };
 enum { CARD_NONE, CARD_TANDY, CARD_ADLIB, CARD_CMS, CARD_SB2, CARD_PRO2,
        CARD_SB16, CARD_GUS, CARD_COUNT };
@@ -35,6 +36,8 @@ extern const CfgSpec cfg_specs[K_COUNT];
 extern const char *card_names[CARD_COUNT];
 extern char cfg_error[160], cfg_type[CFG_VALUE_SIZE], cfg_core[CFG_VALUE_SIZE], cfg_cycles[CFG_VALUE_SIZE];
 const char *cfg_get(int key);
+/* Checkbox state, including the supported advanced EMS modes and aliases. */
+int cfg_enabled(int key);
 int cfg_set(int key, const char *value);
 int cfg_changed(void);
 int cfg_is_dirty(int key);

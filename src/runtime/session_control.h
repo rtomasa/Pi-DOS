@@ -163,7 +163,7 @@ class PiDosApply : public Program {
             Section_prop *sec=static_cast<Section_prop *>(control->GetSection(cfg_specs[key].section));
             Property *prop=sec ? sec->Get_prop(cfg_specs[key].key) : nullptr;
             if(!prop) return true;
-            if((prop->getChange()==Property::Changeable::OnlyAtStart || !strcmp(cfg_specs[key].section,"voodoo")) &&
+            if((key==K_XMS || key==K_EMS || prop->getChange()==Property::Changeable::OnlyAtStart || !strcmp(cfg_specs[key].section,"voodoo")) &&
                prop->GetValue().ToString()!=cfg_get(key)) return true;
         }
         return false;
