@@ -263,7 +263,7 @@ static const char *user_config_path(enum storage storage)
     return NULL;
 }
 
-static bool make_config(enum storage storage, const char *user_config)
+static bool make_config(enum storage storage, const char *user_config, bool session_restart)
 {
     FILE *input = fopen("/pi-dos/pi-dos.conf", "r");
     FILE *output = fopen("/run/pi-dos.conf", "w");
@@ -301,7 +301,7 @@ static bool make_config(enum storage storage, const char *user_config)
     data_device(device, sizeof(device));
     pi_dos_startup(output, "/pi-dos/pi-dos.conf", user_config, device, storage != NO_STORAGE,
                    storage == READ_WRITE, drive_c);
-    pi_dos_first_boot(output, user_config, storage == READ_WRITE, drive_c);
+    if (!session_restart) pi_dos_first_boot(output, user_config, storage == READ_WRITE, drive_c);
     if (diagnostics.boot_fd >= 0 || diagnostics.runtime_fd >= 0)
         fputs("ECHO Diagnostic capture enabled; logs are in C:\\SYSTEM.\n", output);
     pi_dos_mixer(output, user_config);
@@ -380,6 +380,84 @@ static void finish(enum storage storage, bool restart)
     for (;;) pause();
 }
 
+static pid_t start_runtime(enum storage storage, const char *user_config, const sigset_t *blocked)
+{
+    pid_t runtime = fork();
+    if (runtime == 0) {
+        setenv("PI_DOS_SUPERVISED", "1", 1);
+        setenv("PI_DOS_SYSTEM_STORAGE", storage == READ_WRITE ? "rw" :
+               storage == READ_ONLY ? "ro" : "none", 1);
+        setenv("PI_DOS_USB_FLOPPY", "1", 1);
+        setenv("PI_DOS_USB_CDROM", "1", 1);
+        setenv("PI_DOS_USB_STORAGE", "1", 1);
+        char system_device[PATH_MAX];
+        data_device(system_device, sizeof(system_device));
+        setenv("PI_DOS_DATA_DEVICE", system_device, 1);
+        pi_dos_diagnostics_redirect(&diagnostics);
+        sigprocmask(SIG_UNBLOCK, blocked, NULL);
+        setsid();
+        int tty = open("/dev/tty1", O_RDWR);
+        if (tty >= 0) {
+            ioctl(tty, TIOCSCTTY, 0);
+            dup2(tty, 0); /* Keep emulator diagnostics on the serial console. */
+            if (tty > 2) close(tty);
+        }
+        if (chdir("/pi-dos")) {
+            dprintf(2, "Pi-DOS: runtime directory unavailable: %s\n", strerror(errno));
+            _exit(127);
+        }
+        char *arguments[20] = {"pi-dos", "-defaultmapper", "-nopromptfolder",
+                              "-defaultdir", "/pi-dos", "-conf", "/run/pi-dos.conf"};
+        size_t argc = 7;
+        /* User hardware settings override defaults, and user [autoexec]
+         * commands follow system startup. The monitor profile is resolved last. */
+        if (user_config) {
+            arguments[argc++] = "-conf";
+            arguments[argc++] = "/run/pidos-user.conf";
+        }
+        /* The writable DOS startup file overrides supported [config] defaults. */
+        arguments[argc++] = "-conf";
+        arguments[argc++] = "/run/pidos-dos.conf";
+        if (!access("/run/pidos-session.conf", R_OK)) {
+            arguments[argc++] = "-conf";
+            arguments[argc++] = "/run/pidos-session.conf";
+        }
+        /* Managed monitor profiles take precedence over low-level display settings. */
+        arguments[argc++] = "-conf";
+        arguments[argc++] = "/run/pidos-video.conf";
+        arguments[argc++] = "-fastlaunch";
+        arguments[argc++] = "-nomenu";
+        arguments[argc] = NULL;
+        execv("/pi-dos/pi-dos", arguments);
+        dprintf(2, "Pi-DOS: runtime exec failed: %s\n", strerror(errno));
+        _exit(127);
+    }
+    return runtime;
+}
+
+/* Keep the boot configuration as the base. Save-only edits must not become
+ * active just because Apply restarts a DOS session. */
+static bool session_source(const char *base, const char *overlay, const char *destination)
+{
+    FILE *out = fopen(destination, "w");
+    if (!out) return false;
+    const char *paths[] = {base, overlay};
+    bool valid = true;
+    for (size_t i = 0; i < 2; ++i) {
+        if (!paths[i]) continue;
+        FILE *in = fopen(paths[i], "r");
+        if (!in) { valid = false; break; }
+        char buffer[4096]; size_t count;
+        while ((count = fread(buffer, 1, sizeof(buffer), in)))
+            if (fwrite(buffer, 1, count, out) != count) { valid = false; break; }
+        if (ferror(in)) valid = false;
+        fclose(in);
+        fputc('\n', out);
+    }
+    if (fclose(out)) valid = false;
+    return valid;
+}
+
 int main(void)
 {
     if (getpid() != 1 || geteuid() != 0) {
@@ -431,6 +509,10 @@ int main(void)
     const char *user_config = user_config_path(storage);
     if (!pi_dos_cpu_defaults(user_config, pi_dos_cpu_profile(), storage == READ_WRITE))
         dprintf(2, "Pi-DOS: could not initialize the board's CPU default; will retry next boot\n");
+    if (!session_source(user_config, NULL, "/run/pidos-source.cfg")) {
+        dprintf(2, "Pi-DOS: cannot snapshot startup configuration\n");
+        for (;;) pause();
+    }
     /* Set the host process timezone before launching DOSBox and time services.
      * The kernel clock and hardware RTC remain in UTC. */
     pi_dos_timezone(user_config);
@@ -459,7 +541,7 @@ int main(void)
     if ((user_config && (!pi_dos_runtime_config(user_config, "/run/pidos-user.conf") ||
                          !pi_dos_midi_prepare(user_config, "/run/pidos-user.conf", MIDI_ASSET_ROOT))) ||
         !pi_dos_config_sys(storage == NO_STORAGE ? NULL : "/dosdata/CONFIG.SYS", "/run/pidos-dos.conf") ||
-        !make_config(storage, user_config) ||
+        !make_config(storage, user_config, false) ||
         !pi_dos_video_prepare(user_config, "/run/pidos-video.conf")) {
         dprintf(2, "Pi-DOS: runtime configuration failed\n");
         for (;;) pause();
@@ -467,52 +549,7 @@ int main(void)
     if (mount(NULL, "/", NULL, MS_REMOUNT | MS_RDONLY, NULL))
         dprintf(2, "Pi-DOS: root read-only remount unavailable: %s (root is volatile initramfs)\n", strerror(errno));
 
-    pid_t runtime = fork();
-    if (runtime == 0) {
-        setenv("PI_DOS_SUPERVISED", "1", 1);
-        setenv("PI_DOS_SYSTEM_STORAGE", storage == READ_WRITE ? "rw" :
-               storage == READ_ONLY ? "ro" : "none", 1);
-        setenv("PI_DOS_USB_FLOPPY", "1", 1);
-        setenv("PI_DOS_USB_CDROM", "1", 1);
-        setenv("PI_DOS_USB_STORAGE", "1", 1);
-        char system_device[PATH_MAX];
-        data_device(system_device, sizeof(system_device));
-        setenv("PI_DOS_DATA_DEVICE", system_device, 1);
-        pi_dos_diagnostics_redirect(&diagnostics);
-        sigprocmask(SIG_UNBLOCK, &blocked, NULL);
-        setsid();
-        int tty = open("/dev/tty1", O_RDWR);
-        if (tty >= 0) {
-            ioctl(tty, TIOCSCTTY, 0);
-            dup2(tty, 0); /* Keep emulator diagnostics on the serial console. */
-            if (tty > 2) close(tty);
-        }
-        if (chdir("/pi-dos")) {
-            dprintf(2, "Pi-DOS: runtime directory unavailable: %s\n", strerror(errno));
-            _exit(127);
-        }
-        char *arguments[16] = {"pi-dos", "-defaultmapper", "-nopromptfolder",
-                              "-defaultdir", "/pi-dos", "-conf", "/run/pi-dos.conf"};
-        size_t argc = 7;
-        /* User hardware settings override defaults, and user [autoexec]
-         * commands follow system startup. The monitor profile is resolved last. */
-        if (user_config) {
-            arguments[argc++] = "-conf";
-            arguments[argc++] = "/run/pidos-user.conf";
-        }
-        /* The writable DOS startup file overrides supported [config] defaults. */
-        arguments[argc++] = "-conf";
-        arguments[argc++] = "/run/pidos-dos.conf";
-        /* Managed monitor profiles take precedence over low-level display settings. */
-        arguments[argc++] = "-conf";
-        arguments[argc++] = "/run/pidos-video.conf";
-        arguments[argc++] = "-fastlaunch";
-        arguments[argc++] = "-nomenu";
-        arguments[argc] = NULL;
-        execv("/pi-dos/pi-dos", arguments);
-        dprintf(2, "Pi-DOS: runtime exec failed: %s\n", strerror(errno));
-        _exit(127);
-    }
+    pid_t runtime = start_runtime(storage, user_config, &blocked);
     if (runtime < 0) {
         dprintf(2, "Pi-DOS: runtime fork failed: %s\n", strerror(errno));
         for (;;) pause();
@@ -529,6 +566,23 @@ int main(void)
                 dprintf(2, "Pi-DOS: runtime failed (wait status %d); keeping serial diagnostics available\n", status);
                 /* No crash-restart loop. SIGINT/SIGTERM still permit safe shutdown. */
                 runtime = -1;
+                break;
+            }
+            if (!requested && WIFEXITED(status) && WEXITSTATUS(status) == 0 &&
+                !access("/run/pi-dos-session-restart", F_OK)) {
+                unlink("/run/pi-dos-session-restart");
+                bool ready = session_source("/run/pidos-source.cfg", "/run/pidos-session.cfg",
+                                             "/run/pidos-effective.cfg") &&
+                    pi_dos_runtime_config("/run/pidos-session.cfg", "/run/pidos-session.conf") &&
+                    pi_dos_midi_prepare("/run/pidos-session.cfg", "/run/pidos-session.conf", MIDI_ASSET_ROOT) &&
+                    make_config(storage, "/run/pidos-effective.cfg", true);
+                if (ready) {
+                    pi_dos_input_prepare("/run/pidos-effective.cfg");
+                    sync();
+                    runtime = start_runtime(storage, user_config, &blocked);
+                } else runtime = -1;
+                if (runtime < 0)
+                    dprintf(2, "Pi-DOS: session restart failed; serial diagnostics remain available\n");
                 break;
             }
             char request[32];

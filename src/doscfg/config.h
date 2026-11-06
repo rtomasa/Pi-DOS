@@ -26,7 +26,7 @@ enum {
     K_IPX, K_IPX_MODE, K_IPX_SERVER, K_IPX_PORT, K_NE2000, K_NET_BACKEND,
     K_NET_BASE, K_NET_IRQ, K_NET_MAC, K_NET_INTERFACE, K_NET_STARTUP,
     K_NET_IP, K_NET_MASK, K_NET_GATEWAY, K_NET_DNS, K_NET_TCP_PORTS, K_NET_UDP_PORTS,
-    K_NET_IPX_PATH, K_NET_IPX_FRAME, K_NET_WINDOWS, K_AUDIO_OUTPUT, K_FIRST_BOOT, K_CPU_DEFAULT, K_COUNT
+    K_NET_IPX_PATH, K_NET_IPX_FRAME, K_NET_WINDOWS, K_AUDIO_OUTPUT, K_FIRST_BOOT, K_CPU_DEFAULT, K_TURBO_MHZ, K_SHORTCUT_TURBO, K_COUNT
 };
 enum { CARD_NONE, CARD_TANDY, CARD_ADLIB, CARD_CMS, CARD_SB2, CARD_PRO2,
        CARD_SB16, CARD_GUS, CARD_COUNT };
@@ -43,6 +43,7 @@ int cfg_load(const char *path);
 int cfg_profile(void);
 int cfg_cpu_default(void);
 int cfg_select_cpu(int profile);
+void cfg_normalize_turbo(void);
 int cfg_card(void);
 void cfg_select_card(int card);
 void cfg_toggle_voodoo(void);
@@ -51,5 +52,9 @@ void cfg_select_midi(int profile);
 void cfg_reset_page(int page);
 int cfg_save_changes(const char *path);
 int cfg_save(const char *path, int profile);
+int cfg_validate(void);
+int cfg_export_apply(const char *path);
+int cfg_import_apply(const char *path);
+int cfg_apply_key(int key);
 
 #endif

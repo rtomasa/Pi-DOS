@@ -13,6 +13,7 @@ extern const char *page_names[PAGE_COUNT];
 #define MEMORY_COUNT 8
 extern const char *memory_sizes[MEMORY_COUNT];
 int form_fields(int page, Field *fields);
+int form_cpu_fields(Field *fields);
 void form_mixer_channels(unsigned mask);
 int form_first_boot_fields(Field *fields);
 int form_midi_fields(Field *fields);

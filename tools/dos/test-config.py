@@ -224,7 +224,7 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
                        ('K_LCD_ASPECT',b'original'),('K_LCD_LINEAR',b'true')):
         assert set_value(key,value)
     fields = ctypes.create_string_buffer(16 * 128)
-    assert editor.form_fields(7, fields) == 16  # LCD, overlay, audio, region, diagnostics and shortcuts
+    assert editor.form_fields(7, fields) == 17  # LCD, overlay, audio, region, diagnostics and shortcuts
     # Check exact field identity, type and an untouched guard after the array.
     class Field(ctypes.Structure):
         _fields_ = [('key',ctypes.c_int),('type',ctypes.c_int)] + [
@@ -239,7 +239,7 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert all(mixer_fields[i].choices == b'0|25|50|75|100' for i in range(mixer_count))
     assert all(b'Covox' not in mixer_fields[i].label for i in range(mixer_count))
     guarded=GuardedFields(); guarded.guard=0x123456789ABCDEF0
-    assert editor.form_fields(7, guarded.items) == 16
+    assert editor.form_fields(7, guarded.items) == 17
     assert guarded.guard == 0x123456789ABCDEF0
     hud=[f for f in guarded.items if f.key == keys['K_LCD_HUD']]
     assert len(hud)==1 and hud[0].type==2 and hud[0].label==b'CPU and temperature overlay'
@@ -254,7 +254,7 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert b'lcd_hud=true' in path.read_bytes()
     assert editor.cfg_load(encoded) and get('K_LCD_HUD') == b'true'
     assert set_value('K_MONITOR',b'crt')
-    assert editor.form_fields(7, fields) == 12
+    assert editor.form_fields(7, fields) == 13
     assert get('K_LCD_MODE') == b'1280x720'  # switching keeps LCD preferences
     assert get('K_LCD_LINEAR') == b'true'
     assert get('K_LCD_HUD') == b'true'  # switching preserves the hidden option
@@ -343,6 +343,52 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert get('K_SHORTCUT_SCREENSHOT') == b'ctrl+alt+printscreen'
     assert get('K_JOY_TYPE') == b'2axis'
     assert editor.cfg_save_changes(encoded)
+
+    # Normal/Turbo speeds are constrained to the CPU family, and Apply exports
+    # only hardware/shortcuts without changing saved bytes or including AUTOEXEC.
+    assert editor.cfg_load(encoded) and editor.cfg_select_cpu(5)
+    assert set_value('K_TURBO_MHZ', b'133')
+    assert not set_value('K_TURBO_MHZ', b'200')
+    speed_fields = (Field * 1)()
+    assert editor.form_cpu_fields(speed_fields) == 1
+    assert speed_fields[0].key == keys['K_TURBO_MHZ']
+    assert speed_fields[0].choices == b'0=Disabled|120=120 MHz|133=133 MHz'
+    assert not set_value('K_TURBO_MHZ', b'100')
+    assert not set_value('K_TURBO_MHZ', b'66')
+    assert set_value('K_SHORTCUT_TURBO', b'Ctrl+Alt+T')
+    assert set_value('K_SHORTCUT_PAUSE', b'ctrl+alt+t')
+    assert not editor.cfg_validate()
+    assert set_value('K_SHORTCUT_PAUSE', b'none')
+    stable = path.read_bytes()
+    request = temporary / 'APPLY.CFG'
+    editor.cfg_export_apply.argtypes = [ctypes.c_char_p]
+    editor.cfg_import_apply.argtypes = [ctypes.c_char_p]
+    assert editor.cfg_export_apply(str(request).encode())
+    assert path.read_bytes() == stable
+    assert b'turbo_mhz=133' in request.read_bytes()
+    assert b'[autoexec]' not in request.read_bytes() and b'timezone=' not in request.read_bytes()
+    assert editor.cfg_load(encoded) and editor.cfg_import_apply(str(request).encode())
+    assert get('K_CPU_CYCLES') == b'fixed 33445' and get('K_TURBO_MHZ') == b'133'
+    assert editor.cfg_changed() and path.read_bytes() == stable
+    assert editor.cfg_select_cpu(2) and get('K_TURBO_MHZ') == b'0'
+    assert editor.cfg_select_cpu(0) and not set_value('K_TURBO_MHZ', b'100')
+    assert editor.form_cpu_fields(speed_fields) == 1 and speed_fields[0].choices == b'0=Disabled'
+    # Changing profile also clears Turbo when it is no longer faster.
+    assert editor.cfg_select_cpu(3) and set_value('K_TURBO_MHZ', b'66')
+    assert editor.cfg_select_cpu(4) and get('K_TURBO_MHZ') == b'0'
+    assert set_value('K_TURBO_MHZ', b'133') and editor.cfg_select_cpu(5)
+    assert get('K_TURBO_MHZ') == b'133'
+    for profile, expected in ((0, []), (1, [16,20,25]), (2, [40]),
+                              (3, [50,66,75,100,120,133]), (4, [75,100,120,133]),
+                              (5, [120,133]), (6, [90,100,120,133,150,166,200]),
+                              (7, [120,133,150,166,200]), (8, [133,150,166,200])):
+        assert editor.cfg_select_cpu(profile)
+        assert editor.form_cpu_fields(speed_fields) == 1
+        offered = [int(option.split(b'=')[0]) for option in speed_fields[0].choices.split(b'|')[1:]]
+        assert offered == expected, (profile, offered)
+    assert set_value('K_CPU_CYCLES', b'fixed 106860')
+    assert editor.form_cpu_fields(speed_fields) == 1 and speed_fields[0].choices == b'0=Disabled'
+    assert editor.cfg_load(encoded)
 
     # Network modes persist native runtime keys and reject incompatible stacks.
     assert editor.cfg_load(encoded)

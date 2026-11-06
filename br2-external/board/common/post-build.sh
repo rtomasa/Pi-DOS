@@ -37,7 +37,7 @@ python3 - "$project/configs/pi-dos.conf" "$target/pi-dos/PIDOS.CFG" <<'PY'
 from pathlib import Path
 import sys
 source, destination = map(Path, sys.argv[1:])
-text = ('# Pi-DOS persistent configuration. Changes take effect after reboot.\n'
+text = ('# Pi-DOS persistent configuration. Save keeps settings; DOS PIDOSCFG Apply activates hardware now.\n'
         '# Edit C:\\SYSTEM\\PIDOS.CFG; existing files are preserved on BOOT updates.\n'
         '# Optional [autoexec] commands run after system setup and C:\\AUTOEXEC.BAT.\n\n'
         '[pidos]\n'
@@ -45,6 +45,8 @@ text = ('# Pi-DOS persistent configuration. Changes take effect after reboot.\n'
         'first_boot=pending\n'
         '# Select the board CPU default once, before the first DOS session.\n'
         'cpu_default=pending\n'
+        'turbo_mhz=0\n'
+        'shortcut_turbo=Ctrl+Alt+T\n'
         '# Local IANA timezone; daylight saving is automatic.\n'
         '# Examples: Europe/Madrid, Atlantic/Canary, America/New_York, Asia/Tokyo.\n'
         'timezone=Europe/Madrid\n'

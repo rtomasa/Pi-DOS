@@ -61,6 +61,9 @@ paths = [root / 'VERSION', root / 'src/common/midi_ports.h',
          root / 'br2-external/package/pi-dos-runtime/pi-dos-runtime.mk']
 paths += sorted((root / 'patches/dosbox-x').glob('*.patch'))
 paths += sorted((root / 'src/runtime').glob('*.h'))
+paths += sorted((root / 'src/common').glob('*profiles.[ch]'))
+paths += [root / 'src/common/network_options.h', root / 'src/doscfg/config.c',
+          root / 'src/doscfg/config.h', root / 'tools/phase0/install-session.py']
 for path in paths:
     digest.update(str(path.relative_to(root)).encode())
     digest.update(path.read_bytes())

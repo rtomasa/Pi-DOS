@@ -1,6 +1,7 @@
 /* Shared by the 8086 DOS setup utility and the native ARM64 boot summary. */
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include "cpu_profiles.h"
 
 const CpuProfile cpu_profiles[PROFILE_COUNT] = {
@@ -44,6 +45,47 @@ static const char *cycle_value(const char *text)
         while (isspace((unsigned char)*text)) ++text;
     }
     return text;
+}
+
+const CpuSpeed cpu_speeds[CPU_SPEED_COUNT] = {
+    {"286",8,750}, {"286",12,1510}, {"286",16,2060}, {"286",20,2600}, {"286",25,3300},
+    {"386",16,2870}, {"386",20,3640}, {"386",25,4595}, {"386",33,6075}, {"386",40,7390},
+    {"486",25,9000}, {"486",33,12010}, {"486",50,18091}, {"486",66,23880},
+    {"486",75,26225}, {"486",100,33445}, {"486",120,42064}, {"486",133,47810},
+    {"pentium",60,32090}, {"pentium",66,35620}, {"pentium",75,40072},
+    {"pentium",90,48087}, {"pentium",100,53430}, {"pentium",120,64180},
+    {"pentium",133,71240}, {"pentium",150,80145}, {"pentium",166,88694},
+    {"pentium",200,106860}
+};
+
+int cpu_speed_find(const char *type,int mhz)
+{
+    int i;
+    for(i=0;i<CPU_SPEED_COUNT;++i)
+        if(cpu_speeds[i].type && same(type,cpu_speeds[i].type) && cpu_speeds[i].mhz==mhz) return i;
+    return -1;
+}
+int cpu_speed_from_cycles(const char *type,const char *cycles)
+{
+    int i; char *end; long value=strtol(cycle_value(cycles),&end,10);
+    if(*end) return -1;
+    for(i=0;i<CPU_SPEED_COUNT;++i)
+        if(cpu_speeds[i].type && same(type,cpu_speeds[i].type) && cpu_speeds[i].cycles==value) return i;
+    return -1;
+}
+int cpu_turbo_speed_find(const char *type,const char *normal_cycles,int mhz)
+{
+    int normal=cpu_speed_from_cycles(type,normal_cycles),turbo=cpu_speed_find(type,mhz);
+    if(normal<0 || turbo<0 || cpu_speeds[turbo].mhz<=cpu_speeds[normal].mhz) return -1;
+    return turbo;
+}
+const char *cpu_family_label(const char *type)
+{
+    if(same(type,"286")) return "286";
+    if(same(type,"386")) return "386DX";
+    if(same(type,"486")) return "486";
+    if(same(type,"pentium")) return "Pentium";
+    return "Automatic / custom";
 }
 
 int cpu_profile_find(const char *type, const char *core, const char *cycles)

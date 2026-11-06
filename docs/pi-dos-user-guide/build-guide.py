@@ -15,7 +15,7 @@ STEM = 'pi-dos-user-guide'
 
 TEMPLATE = r'''// Generated from pi-dos-user-guide.md by build-guide.py.
 // Edit the Markdown for content; edit TEMPLATE in the builder for shared styling.
-#set document(title: "Pi-DOS 1.1 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 11, day: 5))
+#set document(title: "Pi-DOS 1.1 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 11, day: 6))
 #set text(font: "Nimbus Roman", size: 10.5pt, lang: "en", hyphenate: true)
 #set par(justify: true, leading: 4.6pt, first-line-indent: 0pt, spacing: 5.5pt)
 #set page(width: 155mm, height: 230mm, margin: (inside: 20mm, outside: 17mm, top: 21mm, bottom: 18mm), binding: left, header: none, footer: none)
@@ -86,16 +86,16 @@ TEMPLATE = r'''// Generated from pi-dos-user-guide.md by build-guide.py.
 #v(5mm)
 #text(size: 14pt)[A DOS-compatible computer\ for Raspberry Pi]
 #v(1fr)
-#text(size: 10pt)[Edition 2\ 5 November 2026]
+#text(size: 10pt)[Edition 3\ 6 November 2026]
 #pagebreak()
 
 // Verso / edition note.
 #v(12mm)
 #text(size: 17pt, weight: "bold")[Pi-DOS 1.1 User's Guide]
 #v(6mm)
-#text(size: 10pt)[Edition 2 · 5 November 2026\ Source review: Pi-DOS 1.1]
+#text(size: 10pt)[Edition 3 · 6 November 2026\ Source review: Pi-DOS 1.1 plus unreleased changes]
 #v(8mm)
-#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. This edition does not claim new physical hardware validation.]
+#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
 #v(4mm)
 #text(size: 10pt)[Names of example programs and files are illustrative. The MIDI SoundFonts and ROMs are bundled; games, Windows and some sound patches must be supplied separately where required.]
 #v(4mm)

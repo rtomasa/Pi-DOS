@@ -1,6 +1,6 @@
 # Pi-DOS 1.1 User's Guide — editable sources
 
-This package contains the complete English user guide, its Typst layout and the small builder that keeps the Markdown and PDF editions in sync. Edition 2 is dated 5 November 2026 and covers Pi-DOS 1.1.
+This package contains the complete English user guide, its Typst layout and the small builder that keeps the Markdown and PDF editions in sync. Edition 3 is dated 6 November 2026 and covers Pi-DOS 1.1 plus unreleased Apply, Turbo and storage-recovery changes.
 
 ## Files
 
@@ -50,7 +50,7 @@ A long command can wrap visually in the PDF at a backslash or semicolon. It rema
 
 ## Editorial scope
 
-The first edition used technical-reference.md, reviewed 30 October 2026, as the behavioral source for Pi-DOS 1.0 at baseline ff0c194. Edition 2 updates procedures against the Pi-DOS 1.1 project sources and the setup and Windows application documentation as of 5 November 2026. It covers bundled MIDI assets, Windows configuration and live audio mixing, physical CRT/peripheral connections, CD audio and current build instructions. The supplied 1993 MS-DOS concise guide informed organization and appearance; the user-facing prose is written for Pi-DOS.
+The first edition used technical-reference.md, reviewed 30 October 2026, as the behavioral source for Pi-DOS 1.0 at baseline ff0c194. Edition 3 updates procedures against the Pi-DOS 1.1 project sources and the setup and Windows application documentation as of 6 November 2026. It covers Apply/session restarts, filtered Turbo speeds and shortcuts, CRT/LCD notifications, the LCD monitoring overlay, storage recovery, bundled MIDI assets, Windows configuration and live audio mixing, physical CRT/peripheral connections, CD audio and current build instructions. Apply, Turbo and storage-recovery improvements are identified as newer than the published 1.1 image. The supplied 1993 MS-DOS concise guide informed organization and appearance; the user-facing prose is written for Pi-DOS.
 
 The guide does not claim new hardware acceptance testing. It preserves the supplied reference's distinction between implemented behavior, host checks and physical confirmation. Repository audit tables and the full development history remain in the technical reference, rather than being reproduced as user instructions. The book is in English; the documented Spanish keyboard/Spain/Europe-Madrid defaults describe Pi-DOS, not a presumed reader preference.
 

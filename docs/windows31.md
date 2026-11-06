@@ -57,6 +57,14 @@ the replacement. Actual Windows guest upgrade/uninstall still needs checking.
 
 ### Shared Pi-DOS settings
 
+The CPU profile sets normal speed. Turbo offers only higher MHz choices for that CPU family;
+System includes the configurable Turbo shortcut (default Ctrl+Alt+T). These
+fields are saved for the next Pi-DOS startup. There is no new live Apply button
+in Windows. Once configured at startup, the shortcut toggles only emulation
+speed, retaining the CPU model/core, with a brief CRT/LCD notification. Existing
+Volume preview and Save/Cancel behavior are unchanged.
+
+
 The native settings page reuses `src/doscfg/config.c` and the DOS form
 descriptions, covering CPU, Memory, Video, Sound, Mixer, Input, Network and
 System. Select a setting, Edit, then Save. The shared save engine preserves

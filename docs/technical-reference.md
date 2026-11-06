@@ -1,6 +1,9 @@
 # Pi-DOS technical reference and manual foundation
 
-Version covered: **Pi-DOS 1.1** (`VERSION`). Source review: **5 November 2026**.
+Version covered: **Pi-DOS 1.1 plus unreleased changes**. Source review:
+**6 November 2026**. Apply, Turbo and storage-recovery improvements describe
+the current source tree; they are newer than the published 1.1 build. See the
+[changelog](../CHANGELOG.md) for the release boundary.
 The original hardware evidence, feature audit and development history use the
 **Pi-DOS 1.0** baseline **`ff0c194`**, including 41 development commits from
 `8fb1e69`. Current behavior sections incorporate later source changes; historical
@@ -8,8 +11,9 @@ results do not establish new physical hardware validation for version 1.1.
 
 This is the entry point for writing a Pi-DOS user manual. It explains the
 product's purpose, architecture, current behavior, configuration, hardware
-integration and limitations. It also reconciles **every feature in NOTES.md**
-with the implementation and records **every development commit**. It describes
+integration and limitations. It also reconciles **every original NOTES.md feature**
+with the implementation and retains the original development history, followed
+by newer milestones. It describes
 the repository as it exists, rather than treating the original wishlist or an
 upstream emulator feature as proof of working Raspberry Pi hardware support.
 
@@ -32,7 +36,7 @@ upstream emulator feature as proof of working Raspberry Pi hardware support.
 15. [Diagnostics, evidence and remaining validation](#15-diagnostics-evidence-and-remaining-validation)
 16. [Manual-writing guide and glossary](#16-manual-writing-guide-and-glossary)
 17. [Complete NOTES.md feature reconciliation](#17-complete-notesmd-feature-reconciliation)
-18. [Complete development history](#18-complete-development-history)
+18. [Development history](#18-development-history)
 
 ## 1. Purpose and design approach
 
@@ -109,9 +113,11 @@ DOS files -> managed adapters -> FAT32 C:, USB FAT/exFAT, floppy, CD, images or 
 | Custom C supervisor | Mounting, configuration, discovery, startup, child reaping, device notifications and shutdown | `src/init/` |
 | SDL2 and graphics/audio libraries | Native KMS/DRM, GLES, ALSA and input transport | SDL2 patches, Mesa, libdrm, GBM/EGL, ALSA |
 | DOSBox-X-derived runtime | x86 emulation, DOS/BIOS/shell and virtual PC devices | `patches/dosbox-x/`, runtime package recipe |
-| Native runtime adapters | Managed drives, physical media, attributes, locks, ZIPs, controllers and image switching | `src/runtime/` |
+| Native runtime adapters | Managed drives, physical media, attributes, locks, ZIPs, controllers, image switching, session Apply and Turbo notices | `src/runtime/` |
 | Shared definitions | CPU/video/MIDI profiles, controller/network/display options and shortcut policy | `src/common/` |
 | DOS setup program | User-facing configuration and first-boot screens | `src/doscfg/` |
+| Windows setup and configuration | Unified Win16 installer, Control Panel applet, vendor-driver setup and live mixer | `src/winvideo/`, `tools/windows/`, `assets/windows-drivers/` |
+| Release packaging | Fresh image, Windows installer, PDF guide, metadata and checksums | `tools/release/`, `docs/releases.md` |
 | Asset importers | Download/stage checksum-pinned networking, benchmarks and demos; verify or reimport bundled MIDI assets | `tools/dos/`, `configs/*-assets.json` |
 | Verification tools | Image inspection and focused host/native/hardware checks | `tools/image/`, `tools/phase0/`, `tests/` |
 
@@ -187,6 +193,11 @@ files and BOOT are retained; the resizer is explicitly kept in FAT32 mode.
 Repeat boots skip growth once geometry is complete. A later boot can finish
 filesystem growth after an earlier partition-only expansion.
 
+During expansion, PID 1 reports the check, partition growth, filesystem growth
+and verification stages to serial output and, when available, the HDMI console
+(`/dev/tty1`). This is best-effort stage feedback, not a percentage indicator;
+it does not wait for a display. Already-expanded healthy boots stay quiet.
+
 The routine never formats an unexpected device. Failed checks, resize errors
 or a five-minute operation timeout lead to read-only/recovery handling.
 FAT32 is not journaled, so interruption during a metadata update can still
@@ -260,6 +271,12 @@ and other writes do not silently fall back to RAM. The recovery prompt has no
 general filesystem-repair tool or Linux shell. Repair/copy operations may
 require another computer.
 
+Storage failures also produce a boot-local report accessible with
+`MORE Z:\SYSTEM\STORAGE.TXT`, including when C: is missing or read-only.
+The report is held in RAM and is lost at reboot or poweroff; it is a diagnostic
+exception to the persistent-data policy, not a temporary replacement C:.
+See [storage diagnostics](#151-unified-optional-logging) for capture limits.
+
 ### 4.4 Clean reboot and poweroff
 
 | Trigger | Runtime/supervisor behavior |
@@ -268,6 +285,7 @@ require another computer.
 | `REBOOT` | Batch file writes `reboot` to `C:\SYSTEM\CONTROL.REQ`, exits the shell, and PID 1 consumes/removes the request before rebooting |
 | Ctrl+Alt+Delete, by default | Supervised runtime signals PID 1; whole-Pi clean reboot reloads saved configuration, including during a game |
 | Assigned poweroff shortcut | Signals the same supervised poweroff path |
+| Confirmed DOS setup Apply requiring restart | Restarts only the DOS runtime with session overrides; PID 1 and Linux services keep running |
 | Pi 5 onboard button, short press | Native host-bus `pwr_button` listener requests clean poweroff |
 | Supervisor signals | SIGINT requests reboot; SIGTERM requests poweroff |
 
@@ -390,8 +408,21 @@ replaced on each boot. Older ARM-DOS names and DOSBOX.CFG references in history
 are superseded by the current Pi-DOS naming and PIDOS.CFG workflow.
 
 Use `PIDOSCFG` for supported controls or `EDIT C:\SYSTEM\PIDOS.CFG` for advanced
-settings. Save, then **REBOOT** for hardware, display, input, network and regional
-changes. The live mixer is the documented immediate exception.
+settings. **Save (F2)** persists edits; **Apply (F4)** activates supported
+hardware, mixer, Turbo and shortcut settings for the current session. Save
+before Apply to retain edits across a whole-Pi reboot. Manual file edits take
+effect on the next boot unless imported through a supported setup operation.
+
+| Settings | DOS Apply behavior |
+| --- | --- |
+| CPU profile, Turbo, emulated sound/MIDI and mixer | Apply immediately; transitions to/from a 286 require a DOS-session restart |
+| DOS RAM, emulated video adapter and Voodoo | Confirm and restart the DOS session, without rebooting the Pi |
+| System shortcuts, including Turbo | Apply immediately |
+| CRT/LCD output, LCD overlay, physical audio output, regional settings, diagnostics, controllers and networking | Save and reboot the Pi |
+
+Successful Apply closes setup. Session overrides live under `/run` and expire
+at whole-Pi reboot/poweroff. Reopening setup imports them so Save can retain
+them. See [the Apply protocol](#112-session-apply-and-turbo) for runtime details.
 
 ### 6.2 Setup interface
 
@@ -407,19 +438,24 @@ Its eight pages are **CPU, Memory, Video, Sound, Mixer, Input, Network, System**
 | Tab / Shift+Tab | Move focus |
 | Enter | Edit/activate the focused control |
 | Arrows, Home/End, PgUp/PgDn | Navigate lists; typing filters searchable selections |
-| F2 / Alt+S | Save edited settings across all pages |
-| Esc / cancel controls | Cancel without saving; restore live mixer preview when applicable |
-| F3 / Alt+R | Restore defaults on the current page only, pending Save |
+| F2 / Alt+S | Save edited settings across all pages and stay in setup |
+| F4 / Apply | Activate supported settings and close setup on success; confirm any required DOS-session restart |
+| Esc / Exit | Exit without saving pending edits; restore unsaved live mixer preview |
+| F3 / Alt+R | Restore defaults on the current page only, pending Save or Apply |
 
 The System page scrolls to additional fields and shows arrow/More indicators.
 Mouse selection is optional. Exit restores the previous 80x25 text screen and
 cursor when applicable.
+Exit discards pending edits and unsaved mixer preview; it does not undo an
+earlier Save or successful Apply. Restore defaults changes pending values only,
+until Save or Apply.
 
 ### 6.3 Current defaults
 
 | Area | Fresh-image / corresponding Restore-defaults behavior |
 | --- | --- |
 | CPU | Board defaults: Pi 2/3 386DX/33 (`fixed 6075`), Pi 4 486DX2/66 (`fixed 23880`), Pi 5 Pentium 120 (`fixed 64180`); all `dynamic_rec` |
+| Turbo | Disabled (`turbo_mhz=0`); shortcut Ctrl+Alt+T |
 | RAM | 16 MiB |
 | Video | S3 Trio64; software Voodoo enabled, max memory enabled, Glide passthrough disabled |
 | Monitor | CRT; retained LCD preferences start at 1024x768, 4:3, linear filtering off |
@@ -430,6 +466,7 @@ cursor when applicable.
 | Joystick | Two conventional two-axis joysticks; timed axes; autofire off |
 | Guest network | IPX and NE2000 disabled |
 | Diagnostics | Disabled |
+| LCD CPU/temperature overlay | Disabled (`lcd_hud=false`) |
 | Reboot / poweroff / pause shortcuts | Ctrl+Alt+Delete / none / none |
 | Screenshot / next CD / next floppy | Ctrl+Alt+PrintScreen / Ctrl+Alt+F4 / Ctrl+Alt+F5 |
 
@@ -453,7 +490,7 @@ over **24 KiB** and write/rename failures produce errors.
 
 If a save was interrupted, inspect `PIDOS.TMP`, `PIDOS.BAK` and `PIDOS.CFG`
 before deleting or renaming anything. A backup can be restored from another
-computer. Cancel never writes ordinary settings.
+computer. Exit never writes ordinary settings.
 
 Command-line entry points include:
 
@@ -469,6 +506,33 @@ For the full utility implementation and installed DOS manual, see
 [the setup reference](../src/doscfg/README.md) and
 [README.DOS](../src/doscfg/README.DOS).
 
+### 6.5 Windows configuration and drivers
+
+The native Win16 installer supplies **Pi-DOS Configuration** (`PIDOS.CPL`) for
+Windows 3.1/3.11 and Windows for Workgroups in 386 Enhanced Mode, without
+Win32s. Its Pi-DOS settings reuse the DOS configuration engine and form
+definitions, including Turbo speed and shortcut validation. Hardware settings
+remain save-only for the next Pi-DOS boot; there is no DOS-style live Apply in
+Windows. The separate live Volume dialog retains its Save/Cancel behavior.
+
+The package includes original S3 Trio64 and Tseng ET4000 display drivers.
+The generated mode catalogue intersects vendor modes with the supplied EDID:
+640x480, 800x600 and 1024x768, with supported colour depths and font sizes.
+Windows display-driver changes require restarting Windows. Changing emulated
+hardware from the Windows settings page requires rebooting Pi-DOS.
+
+Audio setup supports existing SB2, SB Pro 2, SB16, GUS and PC speaker driver
+packages; AdLib follows Windows' own driver installation path. It also sets up
+vendor MIDI Mapper configurations. These are packaged vendor drivers, not new
+Pi-DOS Windows audio drivers. Windows installation media remain user-supplied.
+
+Build with `make windows-drivers` to produce
+`output/windows-video/PIDOSDRV.ZIP`. Bundled inputs under
+`assets/windows-drivers/` are hash-checked. Install/reinstall replaces the legacy
+display applet, with staged backups and rollback. Uninstall removes the applet
+while retaining vendor drivers and user settings. For installation, recovery,
+restart behavior and guest-validation limits, see [the Windows guide](windows31.md).
+
 ## 7. CPU, memory and PC compatibility
 
 ### 7.1 CPU execution and profiles
@@ -478,6 +542,10 @@ recompiler**. Dynrec translates guest instruction blocks to native Arm code;
 actual translated-block execution was observed with GDB on Pi 5. The CPU family
 choices support software from early x86 through Pentium/MMX-era configurations,
 subject to the selected model and engine limits.
+
+#### 7.1.1 Normal CPU profiles
+
+The CPU page offers these nine profiles. Their cycle budgets are unchanged.
 
 | Profile ID | Display name | CPU type | Core | Cycles |
 | --- | --- | --- | --- | --- |
@@ -496,11 +564,62 @@ are approximate equivalents; a Pi must have enough sustained performance for
 the requested budget. Profiles do not independently change memory or FPU
 settings. Unrecognized custom combinations remain custom, without an invented
 MHz label. Automatic adapts execution speed but can change timing behavior.
+The profile supplies normal speed; no separate Normal speed control exists.
+The Turbo selector below the profiles offers only higher speeds for the same
+CPU family. Turbo changes the cycle budget while preserving CPU model/core;
+see [the speed table and eligibility rules](#112-session-apply-and-turbo).
 
 A known MIDI rhythm/stuttering problem in tested Sierra software, including
 Leisure Suit Larry 6, occurs with Automatic and was absent with tested fixed
 profiles. A fixed profile is the current workaround. Disabling presentation
 VSync caused tearing and did not resolve it. The root cause remains open.
+
+#### 7.1.2 Shared speed presets
+
+The following table lists all 28 CPU/MHz combinations in
+[`src/common/cpu_profiles.c`](../src/common/cpu_profiles.c), with their exact
+emulator cycle settings. DOS setup, Windows configuration and runtime Turbo use
+this same table. These are performance-class labels, not physical CPU clocks;
+actual performance depends on the Pi and workload.
+
+| CPU family | Speed (MHz) | Cycle setting |
+| --- | --- | --- |
+| 286 | 8 | `fixed 750` |
+| 286 | 12 | `fixed 1510` |
+| 286 | 16 | `fixed 2060` |
+| 286 | 20 | `fixed 2600` |
+| 286 | 25 | `fixed 3300` |
+| 386DX | 16 | `fixed 2870` |
+| 386DX | 20 | `fixed 3640` |
+| 386DX | 25 | `fixed 4595` |
+| 386DX | 33 | `fixed 6075` |
+| 386DX | 40 | `fixed 7390` |
+| 486 | 25 | `fixed 9000` |
+| 486 | 33 | `fixed 12010` |
+| 486 | 50 | `fixed 18091` |
+| 486 | 66 | `fixed 23880` |
+| 486 | 75 | `fixed 26225` |
+| 486 | 100 | `fixed 33445` |
+| 486 | 120 | `fixed 42064` |
+| 486 | 133 | `fixed 47810` |
+| Pentium | 60 | `fixed 32090` |
+| Pentium | 66 | `fixed 35620` |
+| Pentium | 75 | `fixed 40072` |
+| Pentium | 90 | `fixed 48087` |
+| Pentium | 100 | `fixed 53430` |
+| Pentium | 120 | `fixed 64180` |
+| Pentium | 133 | `fixed 71240` |
+| Pentium | 150 | `fixed 80145` |
+| Pentium | 166 | `fixed 88694` |
+| Pentium | 200 | `fixed 106860` |
+
+This table includes the base speeds used to identify normal/custom settings.
+It does not add more normal profiles or make every entry a Turbo choice.
+The selector shows only faster entries for the same CPU family; see
+[Turbo choices by profile](#112-session-apply-and-turbo). For example,
+486DX2 66 MHz uses `fixed 23880`; Turbo at 100 MHz uses `fixed 33445`,
+then disabling Turbo restores `fixed 23880` with the same CPU model/core.
+The Pentium entries use the `pentium` CPU type; they do not select Pentium MMX.
 
 ### 7.2 Memory and software interfaces
 
@@ -613,6 +732,12 @@ LCD-only controls are hidden in CRT mode. Selecting a managed monitor profile
 makes it authoritative over low-level SDL/render options. Old files without
 `[pidos] monitor` keep their earlier advanced display behavior until selection.
 
+The optional `[pidos] lcd_hud=true` overlay reports total Linux CPU usage per
+core and the available CPU/SoC temperature. It is LCD-only, disabled by default
+and independent of diagnostic logging; unavailable readings show `--`. Save and
+reboot to change this setting. Screenshots omit host overlays. Turbo notices
+are separate: they appear on both CRT and LCD, even with this overlay disabled.
+
 ### 8.5 Refresh, VSync and mode inspection
 
 PID 1 enables `SDL_RENDER_VSYNC=1` for swap interval 1 in both profiles. The
@@ -716,8 +841,9 @@ preset/custom values. Only channels present in the running mixer are shown.
 The page queries running hardware/levels through CONFIG and MIXER.
 
 When selected hardware matches the running setup, enabled channels preview
-immediately and the page shows **LIVE**. Cancel restores starting levels at
-whole-percent precision; Save retains preview and persistent settings. Pending
+immediately and the page shows **LIVE**. Exit restores starting levels at
+whole-percent precision; Save retains preview and persistent settings. Apply
+also activates the requested levels after any sound-device recreation. Pending
 hardware changes suspend preview and restore original levels. Unavailable live
 control shows **AFTER REBOOT**. Queries need writable
 `C:\TEMP` or `C:\`; temporary files are created exclusively and removed.
@@ -1062,7 +1188,79 @@ calibration/hotplug acceptance remains open.
 There is no gamepad-to-keyboard mapper, per-game profile system or gamepad-driven
 launcher interface.
 
-### 11.2 System shortcuts and screenshots
+### 11.2 Session Apply and Turbo
+
+DOS PIDOSCFG F4 exports validated hardware/shortcut values to
+`C:\TEMP\PIDAPPLY.CFG`; internal PIAPPLY checks them again using the same C89
+editor and speed tables. Unknown source sections (including AUTOEXEC) are never
+forwarded. CPU properties commit together; supported sound devices are rebuilt
+and shell BLASTER/ULTRASND variables updated. Mixer settings are reapplied after
+device recreation. Apply is rejected inside Windows or protected-mode guests.
+The handoff requires writable `C:\TEMP`. `PIAPPLY /CHECK` writes `LIVE`,
+`RESTART` or `ERROR` to `C:\TEMP\PIDAPPLY.STA`; setup requests confirmation
+before submitting a restart. Requests are bounded to 24 KiB, reject embedded
+NULs and pass both shared configuration and runtime-property validation.
+
+RAM, video adapter, Voodoo and transitions to/from 286 stage
+`/run/pidos-session.cfg`, create `/run/pi-dos-session-restart`, and leave through
+normal emulator teardown. PID 1
+recognizes the marker only after a successful runtime exit, resolves a filtered
+session configuration, and starts a new emulator. Linux, data storage and the
+physical output configuration remain running. The startup configuration is
+snapshotted so unrelated Save-only edits do not become active during this
+restart. Failed restarts retain serial diagnostics rather than crash-looping.
+The snapshot is `/run/pidos-source.cfg`; applying the filtered overrides produces
+`/run/pidos-effective.cfg` and the runtime overlay `/run/pidos-session.conf`.
+The new DOS session reruns startup, including user AUTOEXEC, but skips the
+first-boot wizard. Guest programs and resident drivers from the old session end.
+
+F2 still persists all pages with backup/recovery semantics but remains in setup.
+Apply does not persist user settings. PIAPPLY /QUERY lets DOS setup import active
+session overrides so a later Save can keep them. Other System/Input/Network
+changes remain reboot-only; Windows hardware settings remain save-only.
+`PIAPPLY /QUERY` exports the session values to `C:\TEMP\PIDLIVE.CFG`.
+
+The CPU profile sets normal speed; there is no separate Normal speed field.
+Turbo choices include only higher MHz within that CPU family, plus Disabled.
+Changing profiles disables any Turbo setting that is no longer faster. Save and
+Apply reject equal/slower choices; runtime toggling checks the actual baseline.
+Automatic and unrecognized custom cycle budgets have no fixed-MHz Turbo.
+
+`[pidos] turbo_mhz=0` disables Turbo; nonzero values select the shared CPU-family
+speed table. Turbo changes cycles only and starts OFF. It restores the captured
+Normal cycle policy on disable. The two-second host notification uses saved
+presentation pixels and restores them immediately after presentation, including
+on CRT/indexed surfaces. Idle pumping handles notification arrival/expiry;
+normal frames composite the notification without contaminating guest pixels.
+It appears at the top right, independently of the LCD monitoring overlay and
+diagnostic logging, with labels such as `TURBO ON - 486 100 MHz` and
+`TURBO OFF - 486 66 MHz`. An unavailable target reports `TURBO DISABLED`.
+
+The [complete speed table](#712-shared-speed-presets) lists all CPU/MHz/cycle
+combinations before filtering.
+
+The setup lists **Disabled** plus only speeds above the selected profile:
+
+| Normal CPU profile | Available Turbo speeds (MHz) |
+| --- | --- |
+| Automatic | None |
+| 286 12 MHz | 16, 20, 25 |
+| 386DX 33 MHz | 40 |
+| 486DX 33 MHz | 50, 66, 75, 100, 120, 133 |
+| 486DX2 66 MHz | 75, 100, 120, 133 |
+| 486DX4 100 MHz | 120, 133 |
+| Pentium 75 MHz | 90, 100, 120, 133, 150, 166, 200 |
+| Pentium 100 MHz | 120, 133, 150, 166, 200 |
+| Pentium 120 MHz | 133, 150, 166, 200 |
+
+Existing profile budgets are unchanged; additional speed mappings are estimated
+performance classes requiring Pi/workload calibration, not timing guarantees.
+The authoritative MHz-to-cycle mapping is `src/common/cpu_profiles.c`, shared
+by the DOS and Windows frontends and the runtime. Apply resets Turbo to OFF;
+the next enable captures the applied baseline. External CPU/core/cycle changes
+invalidate the previous toggle pair.
+
+### 11.3 System shortcuts and screenshots
 
 | `[pidos]` key | Default | Action |
 | --- | --- | --- |
@@ -1072,11 +1270,13 @@ launcher interface.
 | `shortcut_screenshot` | Ctrl+Alt+PrintScreen | Numbered PNG in `C:\SYSTEM\CAPTURES` |
 | `shortcut_next_cd` | Ctrl+Alt+F4 | Cycle mounted CD image sets |
 | `shortcut_next_floppy` | Ctrl+Alt+F5 | Cycle mounted floppy image sets |
+| `shortcut_turbo` | Ctrl+Alt+T | Toggle configured Normal/Turbo speed |
 
-Choices are none, Ctrl+Alt+Delete, Ctrl+Alt+F1–F10 and Ctrl+Alt+PrintScreen.
+Choices are none, Ctrl+Alt+Delete, Ctrl+Alt+F1–F10, Ctrl+Alt+PrintScreen and Ctrl+Alt+T.
 F12 remains the engine Host key. Setup rejects duplicate assignments. Boot
 validation disables hand-edited duplicates in action-table order; invalid
-values use defaults and can log diagnostics. Save/reboot applies changes.
+values use defaults and can log diagnostics. DOS Apply activates shortcuts now;
+Save/reboot also applies them.
 
 Matching combinations suppress repeats; Shift/GUI variants remain available
 to the guest. Print Screen also accepts Linux SysRq reporting. Pause activates
@@ -1316,6 +1516,33 @@ without installing a DOS compiler. `PIDOSCFG.build.json` records source,
 compiler-driver and executable hashes; image verification rejects stale code
 or a mismatched packaged executable. See [setup build details](../src/doscfg/README.md#rebuilding).
 
+`bash tools/image/build.sh components` builds only the ARM64 runtime and PID 1,
+without assembling an SD image. The Apply/Turbo integration is installed by
+`tools/phase0/install-session.py` and
+`patches/dosbox-x/0047-session-apply-and-turbo.patch`; the build fingerprints
+include the shared setup definitions and runtime headers.
+
+For a distributable bundle, use `JOBS=4 make release` from a clean, committed
+checkout. It builds a fresh image, DOS setup, Windows installer and PDF guide
+from the same committed source snapshot. Bundled Windows driver inputs are
+hash-checked; the release builder prepares the pinned PDF dependencies in an
+isolated environment automatically.
+
+| File in `output/release/current/` | Contents |
+| --- | --- |
+| `pi-dos-arm64-sdcard.img.xz` | Compressed standard SD image |
+| `pi-dos-user-guide.pdf` | User guide from the same source revision |
+| `PIDOSDRV.ZIP` | Unified Windows driver/configuration installer |
+| `build-info.json` | Commit, version, UTC build time and input/artifact hashes |
+| `SHA256SUMS` | Checksums for the four assets above |
+
+A successful bundle replaces `current/` and retains the preceding bundle in
+`output/release/previous/`; failed builds preserve the last successful bundle.
+`make release` is local. The separate `make release-upload` and
+`make release-upload-only` commands update the single GitHub `rolling` release,
+with the latter reusing a verified bundle for the same HEAD. See
+[the release procedure](releases.md) for prerequisites and upload behavior.
+
 ### 14.3 Image verification and patch maintenance
 
 The runtime recipe applies the ordered DOSBox-X patch series, copies native
@@ -1403,6 +1630,17 @@ or networking. An explicit engine `[log] logfile` can override the video path.
 Missing/read-only storage prevents persistent logs without preventing runtime
 startup; serial diagnostics remain available.
 
+Storage recovery has a separate, always-available diagnostic path independent
+of `diagnostics=true`. PID 1 retains the most recent **64 KiB** of storage/tool
+output plus a separate failure summary in RAM. Tool exit status, elapsed time,
+partition geometry and resize/check failures remain visible even before C:
+can be mounted. Old output is discarded when the buffer fills.
+
+Read-only/recovery startup exposes the report as `Z:\SYSTEM\STORAGE.TXT`.
+Use `MORE Z:\SYSTEM\STORAGE.TXT` and save useful evidence to writable removable
+media before rebooting. It does not create persistent logs or a writable C:;
+if report creation fails, startup directs the user to serial diagnostics.
+
 The diagnostic image enables the same controls by default. Historical
 `armdos.diagnostics` boot flags and separate `videodiagnostics` switches have
 been superseded by PIDOS.CFG. Default kernel diagnostics go to serial; HDMI
@@ -1424,6 +1662,9 @@ console diagnostics can be enabled temporarily through the board procedure.
 | Attributes/sharing/ZIP | Focused real DOS API/backend checks with host simulated kernel/media as applicable | Do not certify every application or physical device |
 | Networking | Configuration/backend/host connectivity and packaging checks | Physical Pi LAN, native IPX peers and WfW file sharing pending |
 | FAT32 expansion | Native sparse 2/64 GiB image checks | ARM64 partition refresh and physical cards pending |
+| Apply/Turbo | Focused ARM64/QEMU checks cover live CPU/sound updates, setup F4/Exit, Turbo on/off, repeat suppression, restart requests, invalid settings and CRT/LCD pixel restoration | Interposed paths and dummy SDL do not prove a real PID 1 restart or physical display behavior |
+| Windows configuration | Shared settings/packaging and installer recovery checks; dedicated live-mixer integration | Real Windows upgrade/uninstall, vendor-driver playback and Pi hardware acceptance remain separate |
+| Release packaging | Source snapshot, image inspection, archive checks and artifact hashes | A valid bundle does not establish physical hardware compatibility |
 | Benchmark/demos | Hashes, inventories, selected launch data/arguments checked | Physical scores/playback/music synchronization pending |
 
 Historical reports describe their own build, not necessarily the latest image.
@@ -1523,7 +1764,7 @@ it does not assert that all related upstream code has been removed.
 | COM and EXE execution | `v` | Implemented | COM and MZ EXE fixtures, including relocation/child status, passed on the baseline. |
 | BAT scripting | `v` | Implemented | Batch invocation, CALL, variables and child exit-code handling are part of the checked baseline. |
 | AUTOEXEC.BAT support | `~` | Implemented | User C:\AUTOEXEC.BAT runs after managed startup; seed only if missing. |
-| CONFIG.SYS compatibility | `~` | Partial | Engine configuration and compatible driver loading exist; not an unrestricted original-PC CONFIG.SYS boot. |
+| CONFIG.SYS compatibility | `~` | Partial | Supported writable C:\CONFIG.SYS directives run before AUTOEXEC; user edits survive. Original-PC driver compatibility remains limited; see config-sys.md. |
 | Environment variables | `v` | Implemented | Standard DOS environment plus managed PATH, TEMP/TMP, sound and network variables. |
 | Standard folder structure for the DOS file system | `v` | Implemented | Volume-root SYSTEM, PROGRAMS, GAMES, DEMOS, DOCS and TEMP layout. |
 | DOS file managers (DosZip Commander) | `v` | Implemented | Doszip DOS 2.68 and DZ launcher, writable settings and matching source archive. |
@@ -1551,7 +1792,7 @@ it does not assert that all related upstream code has been removed.
 | High Memory Area (HMA) | `v` | Inherited | Engine DOS memory capability; not a separate Pi-DOS hardware layer. |
 | DPMI support | `v` | Inherited | Engine protected-mode services; verify particular clients/extenders. |
 | DOS extenders (DOS/4GW, etc.) | `v` | Inherited | Engine compatibility path, without promising or bundling every commercial extender. |
-| Configurable CPU speed and cycles | `v` | Implemented | Ten current profiles plus preserved custom engine settings; see §7 table. |
+| Configurable CPU speed and cycles | `v` | Implemented | Nine profiles, preserved custom settings and a speed-only Turbo selector; see §7 and §11.2. |
 | Automatic CPU speed adjustment | `v` | Implemented | Automatic profile available; timing/MIDI issue documented, fixed profile is default. |
 | Self-modifying code support | `v` | Inherited | Dynamic engine capability; extended cache/JIT and application validation remains open. |
 | TSR compatibility | `~` | Partial | Engine TSR behavior; record locks retained on TSR termination; broad driver/TSR compatibility unproven. |
@@ -1672,7 +1913,7 @@ it does not assert that all related upstream code has been removed.
 | DOS device drivers (where compatible) | `~` | Partial | Compatible driver loading/WFWNET paths; arbitrary hardware drivers are not guaranteed. |
 | Bootable FreeDOS/MS-DOS disk images | `~` | Partial | Inherited image boot route; user supplies media and validates configuration/drivers. |
 | Alternative DOS shells such as 4DOS | `v` | Inherited | Engine alternative-shell facilities retained; no comprehensive Pi appliance acceptance. |
-| Windows 3.x compatibility | `v` | Partial | Engine support and WfW networking helpers; user installation/media and physical checks required. |
+| Windows 3.x compatibility | `v` | Partial | Unified Win16 driver/configuration installer, live mixer and WfW helpers; user installation/media and guest/hardware checks required. |
 | DOS networking and IPX | `~` | Implemented | IPX tunnel and NE2000 SLIRP/PCAP UI/startup; native ODI needs user drivers. |
 | Serial port emulation | `v` | Inherited | Engine serial facilities; physical Pi serial mapping/use not product-validated. |
 | Modem emulation | `x` | Not integrated | No managed modem configuration/acceptance workflow; inherited engine scope is separate. |
@@ -1736,9 +1977,11 @@ it does not assert that all related upstream code has been removed.
 | Optional serial debugging | `v` | Implemented | Kernel/supervisor serial diagnostics and documented temporary HDMI diagnostic path. |
 | Offline operation without networking services | `v` | Partial | Offline DOS use works without connectivity, but current image starts DHCP/Chrony; no service-free profile UI. |
 
-## 18. Complete development history
+## 18. Development history
 
-Every commit reachable from the reviewed original main branch is listed below.
+### 18.1 Original 1.0 history
+
+Every commit reachable from the reviewed original 1.0 main branch is listed below.
 The hashes identify the original local history. The active repository uses
 cleaned history with the local deployment configuration removed from every
 commit, so its commit IDs differ; subjects/order preserve traceability.
@@ -1788,6 +2031,28 @@ Earlier defaults, paths and claims are historical rather than current settings.
 | `6f39d63` | 2026-10-30 | feat: add first-boot setup and refresh CPU profiles | Added two-stage welcome/keyboard/clock setup and refreshed CPU presets to Pentium 75/120/MMX166, making Pentium120 default. Regional/display changes reboot before review. |
 | `ff0c194` | 2026-10-30 | fix: prevent black first-boot welcome on KMS displays | Re-presented first KMS surface for static welcome, preserved text mode and BIOS-buffered setup redraws, embedded project version in titles and fixed volume-root VIDEO.LOG path. |
 
+### 18.2 Later milestones and current source
+
+The cleaned-history equivalent of the original `ff0c194` baseline is
+`62b9b0f`. The following milestones use current repository hashes and summarize
+the subsequent changes; this is not a second commit-by-commit audit.
+
+| Commit(s) | Date | Milestone |
+| --- | --- | --- |
+| `9596df2`, `fcf21e7` | 2026-10-31 | Add this technical reference and consolidate the cleaned repository for GitHub. |
+| `e10ce07`, `9bd97a2` | 2026-10-31–11-01 | Persist screenshots, refresh DOS listings and fix shortcut and capture-filename handling. |
+| `f35431c`, `4aadfba` | 2026-11-01 | Fix hidden-cursor mouse stalls, wildcard deletion and native file-operation synchronization. |
+| `611b368`, `0e9dde1` | 2026-11-01 | Add board-specific CPU recommendations, refresh profiles and adopt tested Pi boot settings. |
+| `03b1acc`, `edb0002` | 2026-11-02 | Improve CONFIG.SYS/Windows setup compatibility and physical CD performance; fix Windows 3.11 floppy formatting. |
+| `9b36687`, `5ea9590` | 2026-11-02 | Introduce and unify the Windows display-driver installer and configuration applet, including upgrade handling. |
+| `7dc6d87` | 2026-11-03 | Add the optional LCD CPU/temperature overlay. |
+| `f9815f2`, `4c3ddb1` | 2026-11-04–05 | Move MIDI inputs out of disposable output and bundle verified SoundFonts/ROMs for fresh builds. |
+| `b7ce027` | 2026-11-05 | Expand Windows configuration, audio-driver setup, live mixing and independent CD volume controls. |
+| `0533e66`, `b54c5bd` | 2026-11-05 | Fix benchmark downloads and refresh the README/user guide for 1.1. |
+| `d5c5cda`, `e1da368`, `342bbe9` | 2026-11-05 | Add local/rolling release packaging, bundle driver inputs and automate PDF dependencies. Published 1.1 was built from `342bbe9`. |
+| `3dc8c53` | 2026-11-05 | Add storage-expansion feedback and RAM-backed recovery diagnostics after the published 1.1 build. |
+| Current working tree | 2026-11-06 review | Add DOS Apply/session restart, speed-only Turbo, configurable shortcut and CRT/LCD notice; retain save-only Windows hardware settings. Remove the separate Normal speed field, filter Turbo to faster choices and rename DOS Cancel to Exit. |
+
 ### Source precedence and supporting references
 
 Current behavior was reconciled against `configs/pi-dos.conf`, the Buildroot
@@ -1804,6 +2069,10 @@ Historical and validation references are retained for their specific evidence:
 - [Short audio validation and teardown limitation](pi5-audio-validation.md)
 - [Wolfenstein x87 investigation](wolf3d-corruption.md)
 - [DOS setup implementation and controls](../src/doscfg/README.md)
+- [Windows installation, drivers and live mixer](windows31.md)
+- [Supported CONFIG.SYS directives](config-sys.md)
+- [Release packaging and upload procedure](releases.md)
+- [User-facing release changes](../CHANGELOG.md)
 - [Networking procedures](networking.txt)
 - [DOSBox-X patch inventory](../patches/dosbox-x/README.md)
 - [DOS payload provenance](../br2-external/board/raspberrypi/dos/README.md)

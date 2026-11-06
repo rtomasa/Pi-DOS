@@ -1,6 +1,6 @@
 // Generated from pi-dos-user-guide.md by build-guide.py.
 // Edit the Markdown for content; edit TEMPLATE in the builder for shared styling.
-#set document(title: "Pi-DOS 1.1 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 11, day: 5))
+#set document(title: "Pi-DOS 1.1 User's Guide", author: "Pi-DOS", date: datetime(year: 2026, month: 11, day: 6))
 #set text(font: "Nimbus Roman", size: 10.5pt, lang: "en", hyphenate: true)
 #set par(justify: true, leading: 4.6pt, first-line-indent: 0pt, spacing: 5.5pt)
 #set page(width: 155mm, height: 230mm, margin: (inside: 20mm, outside: 17mm, top: 21mm, bottom: 18mm), binding: left, header: none, footer: none)
@@ -71,16 +71,16 @@
 #v(5mm)
 #text(size: 14pt)[A DOS-compatible computer\ for Raspberry Pi]
 #v(1fr)
-#text(size: 10pt)[Edition 2\ 5 November 2026]
+#text(size: 10pt)[Edition 3\ 6 November 2026]
 #pagebreak()
 
 // Verso / edition note.
 #v(12mm)
 #text(size: 17pt, weight: "bold")[Pi-DOS 1.1 User's Guide]
 #v(6mm)
-#text(size: 10pt)[Edition 2 · 5 November 2026\ Source review: Pi-DOS 1.1]
+#text(size: 10pt)[Edition 3 · 6 November 2026\ Source review: Pi-DOS 1.1 plus unreleased changes]
 #v(8mm)
-#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. This edition does not claim new physical hardware validation.]
+#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
 #v(4mm)
 #text(size: 10pt)[Names of example programs and files are illustrative. The MIDI SoundFonts and ROMs are bundled; games, Windows and some sound patches must be supplied separately where required.]
 #v(4mm)
@@ -120,7 +120,9 @@
 
 #heading(level: 2)[#text("About this guide")]#label("h-about-this-guide")
 
-#p[#text("This edition describes Pi-DOS 1.1, reviewed against the project sources on 5 November 2026. It includes the bundled MIDI assets, Windows configuration and mixer updates, and current startup behavior. Existing installations may retain earlier settings. When this guide says ")#emph[#text("default")]#text(", it means the current fresh-image setting, unless stated otherwise.")]
+#p[#text("This edition describes Pi-DOS 1.1, reviewed against the project sources on 6 November 2026. It includes session Apply, CPU profiles and faster Turbo speeds, CRT/LCD Turbo notifications, the bundled MIDI assets and Windows configuration and mixer controls. Existing installations may retain earlier settings. When this guide says ")#emph[#text("default")]#text(", it means the current fresh-image setting, unless stated otherwise.")]
+
+#p[#text("Apply, Turbo and the storage-recovery improvements describe newer source changes") #text("that are not in the published 1.1 image. Use a build containing those changes") #text("for the corresponding instructions.")]
 
 #p[#text("This is a user guide rather than a record of development. It explains implemented behavior, but does not certify every Raspberry Pi, peripheral, game or Windows installation. Appendix E summarizes the hardware checks recorded in the technical reference and identifies features that still need physical confirmation.")]
 
@@ -218,7 +220,7 @@
 
 #procedure[#text("To write a new Pi-DOS card")]
 
-#items[#enum(start: 1, [#text("On another computer, obtain the intended ")#inline-code("pi-dos-arm64-sdcard.img")#text(" image, or its diagnostic variant.")], [#text("Insert the destination card and open your image-writing utility.")], [#text("Select the Pi-DOS image and carefully select the destination device.")], [#text("Write and, if your utility offers it, verify the image.")], [#text("Eject the card using that computer's normal removal procedure.")])]
+#items[#enum(start: 1, [#text("On another computer, obtain the intended ")#inline-code("pi-dos-arm64-sdcard.img")#text(" image, or its diagnostic variant. Release downloads use ")#inline-code(".img.xz")#text("; extract the image first if your writing utility does not accept XZ files.")], [#text("Insert the destination card and open your image-writing utility.")], [#text("Select the Pi-DOS image and carefully select the destination device.")], [#text("Write and, if your utility offers it, verify the image.")], [#text("Eject the card using that computer's normal removal procedure.")])]
 
 #notice[#text("")#strong[#text("Important")]#text(" Writing an image replaces the destination card's existing partition layout and data. Confirm the device before writing. This is a preparation task on another computer, not a DOS FORMAT operation.")]
 
@@ -234,7 +236,7 @@
 
 #p[#text("Pi-DOS may check and expand its data partition before reaching DOS. Allow it to finish; do not remove power during a storage operation. Expansion is restricted to the expected Pi-DOS layout. Unexpected layouts are left unchanged rather than formatted.")]
 
-#p[#text("Expansion stages are shown on the HDMI text console when available, including retries on later boots until expansion succeeds. Once storage fills the card, normal boots add no expansion messages, checks or waits.")]
+#p[#text("Expansion stages are shown on the HDMI text console when available, including retries on later boots until expansion succeeds. Once storage fills the card, normal boots skip the resize procedure and add no expansion messages.")]
 
 #p[#text("The startup table reports the physical board and selected emulated PC hardware. Its CPU, DOS memory, video and sound entries describe the configured environment. They do not mean that those components exist as physical PC expansion cards.")]
 
@@ -500,13 +502,13 @@
 
 #items[#enum(start: 1, [#text("Prepare ")#inline-code("PIDOSDRV.ZIP")#text(" on the development computer as described in the Windows setup guide.")], [#text("Extract its complete ")#inline-code("PIDOSDRV")#text(" folder to ")#inline-code("C:\\DRIVERS\\PIDOSDRV")#text(". Keep ")#inline-code("SETUP.EXE")#text(", ")#inline-code("PIDINST.DLL")#text(", ")#inline-code("PIDOS.CPL")#text(" and the packaged driver folders together.")], [#text("Start Windows, run ")#inline-code("C:\\DRIVERS\\PIDOSDRV\\SETUP.EXE")#text(" and choose ")#strong[#text("Install / Reinstall")]#text(".")], [#text("If asked, close Control Panel and Pi-DOS Configuration before retrying. Setup replaces an older applet, including the former PIVIDEO entry.")], [#text("Accept the restart prompt when ready, then reopen Control Panel to use the new application.")])]
 
-#p[#text("The ")#strong[#text("Display")]#text(" page selects packaged modes for the configured S3 or ET4000 adapter. Changing the emulated adapter itself requires a full Pi-DOS reboot before installing or selecting its Windows driver. Applying a Windows display mode requires restarting Windows. Available resolutions depend on the packaged driver catalogue and display timings.")]
+#p[#text("The ")#strong[#text("Display")]#text(" page selects packaged modes for the configured S3 or ET4000 adapter. Changing the emulated adapter itself requires a new DOS session before installing or selecting its Windows driver: exit Windows, select the adapter in DOS PIDOSCFG, and Apply. Saving it in the Windows applet still requires a Pi-DOS reboot to activate it. Applying a Windows display mode requires restarting Windows. Available resolutions depend on the packaged driver catalogue and display timings.")]
 
 #p[#text("The ")#strong[#text("Audio and MIDI")]#text(" page installs supported existing Windows sound drivers. Select a driver matching the active Pi-DOS hardware. Creative SB2, SB Pro 2, SB16 and PC speaker installation run inside Windows; Gravis launches its original installer after closing Windows. AdLib uses Windows' own Drivers installation and may request Windows disks. Save work before any installer or restart.")]
 
 #p[#text("Creative installation includes the vendor MIDI Mapper setups and initially selects ")#strong[#text("SB MIDI Out")]#text(", ")#strong[#text("SBP2 All MIDI")]#text(" or ")#strong[#text("SB16 All MIDI")]#text(", as appropriate. These route music to the configured Pi-DOS MIDI destination, normally SC-55. Use ")#strong[#text("Windows MIDI Mapper...")]#text(" to choose a different setup, such as an FM synthesizer. Windows' common audio and MIDI components must already be installed; its Drivers dialog can request installation media.")]
 
-#p[#text("The ")#strong[#text("Pi-DOS settings")]#text(" page saves the shared hardware and system configuration. These changes normally require rebooting Pi-DOS. Its Mixer settings save boot levels; use ")#strong[#text("Audio and MIDI > Volume...")]#text(" for immediate Windows volume changes, described in Chapter 7. ")#strong[#text("Restart Windows...")]#text(" restarts the guest environment, while a Pi-DOS reboot also applies changed emulated hardware.")]
+#p[#text("The ")#strong[#text("Pi-DOS settings")]#text(" page saves the shared hardware and system configuration for the next Pi-DOS startup, including Turbo speed and its shortcut. It has no live hardware Apply button. Its Mixer settings save boot levels; use ")#strong[#text("Audio and MIDI > Volume...")]#text(" for immediate Windows volume changes, described in Chapter 7. ")#strong[#text("Restart Windows...")]#text(" restarts the guest environment, while a Pi-DOS reboot also applies changed emulated hardware.")]
 
 #p[#text("To remove the configuration application, run Setup and choose ")#strong[#text("Uninstall")]#text(". Installed vendor drivers, saved settings, audio caches and backups remain available for a later reinstall. The new Windows installation, upgrade and playback paths still need confirmation in actual guest installations.")]
 
@@ -572,20 +574,37 @@
 [#text("Home / End, PgUp / PgDn")],
 [#text("Move within lists")],
 [#text("F2 or Alt+S")],
-[#text("Save edited settings across all pages")],
+[#text("Save edited settings across all pages; stay in setup")],
+[#text("F4")],
+[#text("Apply hardware and shortcuts to this session")],
 [#text("F3 or Alt+R")],
-[#text("Restore defaults on the current page, pending Save")],
-[#text("Esc")],
-[#text("Cancel without saving ordinary settings")],
+[#text("Restore defaults on the current page, pending Save or Apply")],
+[#text("Esc / Exit")],
+[#text("Exit without saving pending edits; restore unsaved mixer preview")],
 ), compact: false)
 
 #p[#text("Some lists support searching by typing. Mouse selection is optional. F3 changes the current page only and does not take effect on disk until you save.")]
 
+#reference-table((0.85fr, 1.15fr), (
+[#text("What you changed")],
+[#text("How to activate it")],
+[#text("CPU, Turbo, emulated sound/MIDI, mixer or shortcuts")],
+[#text("Apply; switching to or from a 286 restarts DOS")],
+[#text("DOS memory, video adapter or Voodoo")],
+[#text("Apply and confirm a DOS-session restart")],
+[#text("CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network")],
+[#text("Save and reboot Pi-DOS")],
+), compact: false)
+
 #procedure[#text("To change a setting")]
 
-#items[#enum(start: 1, [#text("Run ")#inline-code("PIDOSCFG")#text(" and move to the relevant page.")], [#text("Select the control and choose the new value.")], [#text("Review any related settings on other pages.")], [#text("Press ")#strong[#text("F2")]#text(" to save.")], [#text("Return to the prompt and run ")#inline-code("REBOOT")#text(" to apply the saved configuration.")])]
+#items[#enum(start: 1, [#text("Run ")#inline-code("PIDOSCFG")#text(" and move to the relevant page.")], [#text("Select the control and choose the new value.")], [#text("Review any related settings on other pages.")], [#text("Press ")#strong[#text("F2")]#text(" to save settings for future boots, if wanted. Save stays in setup.")], [#text("Press ")#strong[#text("F4 / Apply")]#text(" to activate CPU, sound, mixer and system-shortcut settings now.")])]
 
-#p[#text("Hardware, display, input, network and regional changes normally require rebooting. The live mixer is the documented exception: eligible channels preview immediately. Chapter 7 explains when mixer changes are live and how Cancel restores them.")]
+#p[#text("Apply closes setup after success. RAM size, video-card, Voodoo and transitions to/from 286 ask") #text("before restarting the DOS session; the Raspberry Pi remains running. This") #text("starts DOS and its startup files again, so session-only mounts and unsaved") #text("program state are lost. Apply is available outside Windows and needs writable") #inline-code("C:\\TEMP")#text(". Save your work and exit Windows before running DOS setup.")]
+
+#p[#text("Apply does not save ")#inline-code("PIDOS.CFG")#text(". Unsaved applied settings remain active across") #text("Apply-triggered DOS-session restarts, until whole-Pi reboot or poweroff.") #text("Reopening DOS setup restores these applied values and marks differences from") #text("the saved file as unsaved, so F2 can keep them. Exit discards pending edits;") #text("it does not undo an earlier Save or successful Apply.")]
+
+#p[#text("Other System settings (including physical audio output and CRT/LCD monitor") #text("settings), Input, Network and regional changes still require Save and ")#inline-code("REBOOT")#text(".") #text("The mixer continues to preview eligible levels immediately; Chapter 7 explains") #text("when Exit restores previewed levels.")]
 
 #heading(level: 2)[#text("Understanding PIDOS.CFG")]#label("h-understanding-pidoscfg")
 
@@ -649,7 +668,7 @@
 
 #p[#text("Before the first DOS session, a fresh image detects the Raspberry Pi and selects a CPU preset: ")#strong[#text("386DX 33 MHz on Pi 2/3 families")]#text(", ")#strong[#text("486DX2 66 MHz on Pi 4 families")]#text(", or ")#strong[#text("Pentium 120 MHz on Pi 5 families")]#text(". This also applies if you skip the welcome setup. Zero 2 and Compute Module 3 use the Pi 2/3 preset; Pi 400 and Compute Module 4/4S use Pi 4; Pi 500 and Compute Module 5 use Pi 5. Unknown models keep the packaged Pentium 120 fallback.")]
 
-#p[#text("The CPU page marks all three board defaults and adds ")#strong[#text("[recommended]")]#text(" to the detected board's preset. ")#strong[#text("Restore defaults")]#text(" selects that preset; Save and reboot apply it. Updates and moving an existing card to another board preserve the saved CPU settings.")]
+#p[#text("The CPU page marks all three board defaults and adds ")#strong[#text("[recommended]")]#text(" to the detected board's preset. ")#strong[#text("Restore defaults")]#text(" selects that preset; Apply activates it, and Save keeps it for future boots. Updates and moving an existing card to another board preserve the saved CPU settings.")]
 
 #p[#text("These defaults reflect reported Pi-DOS hardware testing and remain starting points for each DOS workload. Lower the profile if a program has audio dropouts or slow response. The MHz labels indicate approximate performance classes. They do not guarantee the speed, timing or benchmark score of a particular original PC.")]
 
@@ -678,11 +697,44 @@
 
 #procedure[#text("To try a slower PC profile")]
 
-#items[#enum(start: 1, [#text("Open ")#inline-code("PIDOSCFG")#text(" and select CPU.")], [#text("Choose a fixed profile appropriate to the program, such as 486DX2 66 MHz.")], [#text("Save and run ")#inline-code("REBOOT")#text(".")], [#text("Start the program again and compare its behavior.")])]
+#items[#enum(start: 1, [#text("Open ")#inline-code("PIDOSCFG")#text(" and select CPU.")], [#text("Choose a fixed profile appropriate to the program, such as 486DX2 66 MHz.")], [#text("Save if you want to keep the choice, then press Apply.")], [#text("Start the program again and compare its behavior.")])]
 
 #p[#text("You can list profile choices from the command line with ")#inline-code("PIDOSCFG /LIST")#text(". For example, ")#inline-code("PIDOSCFG /PROFILE 486-66")#text(" selects that saved profile; reboot afterward. Profile selection does not independently change memory or FPU settings.")]
 
 #p[#text("Use one change at a time when diagnosing timing problems. A slow menu, fast animation or music problem can depend on application timing rather than raw processor throughput.")]
+
+#heading(level: 2)[#text("CPU profile and Turbo")]#label("h-cpu-profile-and-turbo")
+
+#p(sticky: true)[#text("The CPU profile sets normal speed. Below the profile list, ")#strong[#text("Turbo speed")]#text(" offers") #text("only higher MHz presets for that CPU family, plus ")#strong[#text("Disabled")]#text(". There is no") #text("separate Normal speed setting. These are the choices for each normal profile:")]
+
+#reference-table((0.85fr, 1.15fr), (
+[#text("Normal CPU profile")],
+[#text("Available Turbo speeds (MHz)")],
+[#text("Automatic")],
+[#text("None")],
+[#text("286 12 MHz")],
+[#text("16, 20, 25")],
+[#text("386DX 33 MHz")],
+[#text("40")],
+[#text("486DX 33 MHz")],
+[#text("50, 66, 75, 100, 120, 133")],
+[#text("486DX2 66 MHz")],
+[#text("75, 100, 120, 133")],
+[#text("486DX4 100 MHz")],
+[#text("120, 133")],
+[#text("Pentium 75 MHz")],
+[#text("90, 100, 120, 133, 150, 166, 200")],
+[#text("Pentium 100 MHz")],
+[#text("120, 133, 150, 166, 200")],
+[#text("Pentium 120 MHz")],
+[#text("133, 150, 166, 200")],
+), compact: false)
+
+#p[#text("Turbo is disabled by default. Choose a Turbo speed, press ")#strong[#text("F2")]#text(" if you want to") #text("keep it for future boots, then ")#strong[#text("F4 / Apply")]#text(". Each new session starts with") #text("Turbo OFF, using the normal profile speed. Press ")#strong[#text("Ctrl+Alt+T")]#text(" to switch") #text("between normal and Turbo speed while a program") #text("runs; System's ")#strong[#text("Turbo shortcut")]#text(" changes that assignment. Toggling preserves") #text("the CPU model and execution core. A brief top-right notification reports, for") #text("example, ")#inline-code("TURBO ON - 486 100 MHz")#text(" or ")#inline-code("TURBO OFF - 486 33 MHz")#text(" on ")#strong[#text("CRT and LCD")]#text(",") #text("even when the performance overlay is disabled. It does not change display") #text("resolution or refresh rate, or appear in DOS screenshots.")]
+
+#p[#text("MHz are performance-class presets backed by cycle budgets, not exact physical") #text("clocks. Faster presets require sufficient Pi performance; some applications") #text("calibrate timing at launch and work best without toggling while running.") #text("Changing profiles disables Turbo if the selected speed is no longer faster. If") #text("no faster preset exists, only Disabled is available. Automatic keeps") #text("its adaptive behavior and has no fixed-MHz Turbo choices.") #text("Custom CPU settings need a recognized fixed-speed preset before Turbo is") #text("available. The technical reference lists the complete CPU/MHz/cycle mapping.")]
+
+#p[#text("The Windows applet exposes the same CPU profile, filtered Turbo speed and System shortcut,") #text("but saves them for the next Pi-DOS startup. Its existing live volume controls") #text("are unchanged. A Turbo shortcut already loaded at startup also operates inside") #text("Windows.")]
 
 #heading(level: 2)[#text("Fixed speed and Automatic")]#label("h-fixed-speed-and-automatic")
 
@@ -698,7 +750,7 @@
 
 #procedure[#text("To change the memory size")]
 
-#items[#enum(start: 1, [#text("Open the Memory page in PIDOSCFG.")], [#text("Choose a size supported by the selected CPU.")], [#text("Save and reboot.")], [#text("Run the application and check its own requirements and messages.")])]
+#items[#enum(start: 1, [#text("Open the Memory page in PIDOSCFG.")], [#text("Choose a size supported by the selected CPU.")], [#text("Save if wanted, then Apply and confirm the DOS-session restart.")], [#text("Run the application and check its own requirements and messages.")])]
 
 #p[#text("More memory is not always better. Some older programs fail with more than 16 MiB; others require a smaller configuration. Setup rejects sizes outside the selected CPU's address range.")]
 
@@ -730,6 +782,8 @@
 
 #p[#text("Software Voodoo emulation is enabled by default with maximum memory. It emulates 3dfx hardware in software; it does not mean the Pi contains a Voodoo card or that every accelerated game will be fast. Host Glide passthrough is disabled in the baseline.")]
 
+#p[#text("To activate a video-adapter or Voodoo change, Save if wanted, then Apply and") #text("confirm the DOS-session restart. CRT/LCD monitor settings are separate and") #text("still require Save and a whole-Pi reboot.")]
+
 #heading(level: 2)[#text("Using a CRT monitor")]#label("h-using-a-crt-monitor")
 
 #p[#text("CRT is the default monitor profile. It follows the guest's rendered dimensions and attempts to select a corresponding host mode near the guest refresh rate. Standard VGA text begins at 720 by 400 pixels at roughly 70 Hz.")]
@@ -749,6 +803,12 @@
 #p[#text("LCD mode fits the image with centered borders and reduces oversized guest modes to fit. Original pixels preserves the rendered raster ratio: for example, 320x200 is 8:5. A 4:3 choice deliberately changes that displayed proportion.")]
 
 #p[#text("There is no automatic native-panel detection, integer-scale control or user refresh selector in the described setup. LCD preferences remain saved while CRT is selected.")]
+
+#heading(level: 2)[#text("Showing CPU load and temperature")]#label("h-showing-cpu-load-and-temperature")
+
+#p[#text("With LCD selected, enable ")#strong[#text("CPU and temperature overlay")]#text(" on the System page,") #text("then Save and reboot. It shows Linux CPU usage per core and the available") #text("CPU/SoC temperature; ")#inline-code("--")#text(" means a reading is unavailable. It is off by default,") #text("works independently of diagnostic logging and is omitted from DOS screenshots.")]
+
+#p[#text("This monitoring overlay is LCD-only. The brief Turbo notification appears on") #text("both CRT and LCD, including when monitoring is disabled.")]
 
 #heading(level: 2)[#text("Inspecting available modes")]#label("h-inspecting-available-modes")
 
@@ -780,7 +840,7 @@
 
 #procedure[#text("To match a game's digital sound setup")]
 
-#items[#enum(start: 1, [#text("In PIDOSCFG, choose the sound device and resources you want.")], [#text("Save and reboot.")], [#text("Run the game's sound setup.")], [#text("Select the same device, address, IRQ and DMA values.")], [#text("Run the game's sound test if provided, then save its settings.")])]
+#items[#enum(start: 1, [#text("In PIDOSCFG, choose the sound device and resources you want.")], [#text("Save if wanted, then Apply to activate the sound hardware.")], [#text("Run the game's sound setup.")], [#text("Select the same device, address, IRQ and DMA values.")], [#text("Run the game's sound test if provided, then save its settings.")])]
 
 #p[#text("At the DOS prompt, ")#inline-code("SET BLASTER")#text(" shows the current sound environment. Do not select SB16 in a game while Pi-DOS is still configured for SB Pro 2 merely because the game offers that option.")]
 
@@ -801,7 +861,7 @@
 [#text("A compatible playback-capable USB audio-class device connected before boot")],
 ), compact: false)
 
-#p[#text("Pi-DOS waits briefly for USB audio discovery. If the selected output is missing, that boot remains silent; it does not silently choose another output. With multiple USB DACs, selection follows ALSA card/device order rather than a user-selected stable device identity.")]
+#p[#text("Pi-DOS waits briefly for USB audio discovery. If the selected output is missing, that boot remains silent; it does not silently choose another output. With multiple USB DACs, it selects the first ALSA card ID alphabetically, then that card's lowest playback device number.")]
 
 #p[#text("All internally mixed audio, internal MIDI and extracted CD audio follows the selected output. External MIDI module audio is separate.")]
 
@@ -846,9 +906,9 @@
 
 #procedure[#text("To preview and save mixer levels")]
 
-#items[#enum(start: 1, [#text("Start with the intended sound hardware already active.")], [#text("Open PIDOSCFG and select Mixer.")], [#text("Adjust an enabled channel marked ")#strong[#text("LIVE")]#text(".")], [#text("Press ")#strong[#text("F2")]#text(" to keep the preview and save it, or cancel to restore the starting levels.")])]
+#items[#enum(start: 1, [#text("Start with the intended sound hardware already active.")], [#text("Open PIDOSCFG and select Mixer.")], [#text("Adjust an enabled channel marked ")#strong[#text("LIVE")]#text(".")], [#text("Press ")#strong[#text("F2")]#text(" to keep the preview and save it, or choose Exit to restore the unsaved preview levels.")])]
 
-#p[#text("Pending hardware changes suspend live preview and restore original levels. When live control is unavailable, the page shows ")#strong[#text("AFTER REBOOT")]#text(" and saves levels for the next boot. Temporary queries need writable C: storage.")]
+#p[#text("Pending hardware changes suspend live preview and restore original levels.") #text("Apply activates the selected hardware and reapplies its mixer levels. When live") #text("preview is unavailable, the page shows ")#strong[#text("AFTER REBOOT")]#text("; you can still save") #text("levels for the next boot. Temporary queries need writable C: storage.")]
 
 #procedure[#text("To adjust volume inside Windows")]
 
@@ -1042,17 +1102,19 @@
 [#text("Next image in mounted CD image sets")],
 [#text("Ctrl+Alt+F5")],
 [#text("Next image in mounted floppy image sets")],
+[#text("Ctrl+Alt+T")],
+[#text("Toggle Normal/Turbo speed, once a Turbo speed is configured")],
 [#text("None assigned")],
 [#text("Poweroff")],
 [#text("None assigned")],
 [#text("Pause/resume")],
 ), compact: false)
 
-#p[#text("F12 remains the runtime Host key. The listed Pi-DOS shortcuts can be reassigned to None, Ctrl+Alt+Delete, Ctrl+Alt+F1 through F10, or Ctrl+Alt+PrintScreen. Setup rejects duplicate assignments.")]
+#p[#text("F12 remains the runtime Host key. The listed Pi-DOS shortcuts can be reassigned to None, Ctrl+Alt+Delete, Ctrl+Alt+F1 through F10, Ctrl+Alt+PrintScreen, or Ctrl+Alt+T. Setup rejects duplicate assignments.")]
 
 #procedure[#text("To change a system shortcut")]
 
-#items[#enum(start: 1, [#text("Open the System page and find the desired action; scroll if needed.")], [#text("Choose an unused key combination or None.")], [#text("Save and reboot.")], [#text("Check the assignment before using it in an application.")])]
+#items[#enum(start: 1, [#text("Open the System page and find the desired action; scroll if needed.")], [#text("Choose an unused key combination or None.")], [#text("Save if you want to keep the assignment, then Apply to activate it now.")], [#text("Check the assignment before using it in an application.")])]
 
 #p[#text("A disabled shortcut returns to normal DOS input. Assigned combinations suppress repeated key events. Shift/GUI variants remain available to the guest.")]
 
@@ -1194,7 +1256,7 @@
 
 #procedure[#text("To compare two configurations")]
 
-#items[#enum(start: 1, [#text("Record the Pi model, Pi-DOS version, CPU profile, RAM, video adapter and monitor settings.")], [#text("Run the same benchmark option and record the result.")], [#text("Change one setting, save and reboot.")], [#text("Repeat the same option under otherwise comparable conditions.")])]
+#items[#enum(start: 1, [#text("Record the Pi model, Pi-DOS version, CPU profile, RAM, video adapter and monitor settings.")], [#text("Run the same benchmark option and record the result.")], [#text("Change one setting. Save if wanted, then Apply for CPU, memory, video or sound; reboot for settings that require it.")], [#text("Repeat the same option under otherwise comparable conditions.")])]
 
 #p[#text("A score measures the configured emulated environment. A CPU profile label does not guarantee an original PC's score. Cooling, throttling and the Pi's ability to sustain the requested emulation speed can affect results.")]
 
@@ -1550,6 +1612,8 @@
 [#text("Documentation and temporary files")],
 [#inline-code("Z:\\NETWORK")],
 [#text("Installed networking tools and manual")],
+[#inline-code("Z:\\SYSTEM\\STORAGE.TXT")],
+[#text("RAM-only storage report on a recovery boot")],
 ), compact: false)
 
 #p[#text("The directory C:\\IMAGES used in examples is a suggested user-created location, not a guaranteed pre-created directory.")]
@@ -1561,6 +1625,8 @@
 [#text("Current default")],
 [#text("CPU")],
 [#text("Pi 2/3: 386DX/33; Pi 4: 486DX2/66; Pi 5: Pentium 120. See ")#link(label("h-selecting-a-cpu-profile"))[#text("Selecting a CPU profile")]#text(" (p. ")#ref(label("h-selecting-a-cpu-profile"), form: "page", supplement: none)#text(")")#text(".")],
+[#text("Turbo")],
+[#text("Disabled; default shortcut Ctrl+Alt+T")],
 [#text("DOS RAM")],
 [#text("16 MiB")],
 [#text("Video")],
@@ -1571,6 +1637,8 @@
 [#text("CRT")],
 [#text("Retained LCD preferences")],
 [#text("1024x768, 4:3, linear filtering off")],
+[#text("LCD CPU/temperature overlay")],
+[#text("Disabled")],
 [#text("PC sound")],
 [#text("SB Pro 2, 220h, IRQ 7, DMA 1")],
 [#text("PC speaker")],
@@ -1736,6 +1804,8 @@
 
 #p[#text("Use the project's technical reference and build instructions for dependency versions, patch maintenance, rebuilding setup and verification. The complete development history belongs there rather than in this user guide.")]
 
+#p[#text("For a release bundle, ")#inline-code("JOBS=4 make release")#text(" builds the compressed SD image,") #text("Windows installer, PDF guide, build metadata and checksums from a clean,") #text("committed checkout. Results are in ")#inline-code("output/release/current/")#text(". This is a local") #text("build; the separate upload commands are described in the release procedure.")]
+
 #heading(level: 2)[#text("Software and asset notices")]#label("h-software-and-asset-notices")
 
 #p[#text("The reviewed baseline had not selected a project-wide license for original Pi-DOS code. This guide does not select one. Components and bundled payloads retain their individual licenses, notices and distribution conditions.")]
@@ -1746,7 +1816,9 @@
 
 #heading(level: 2)[#text("Editorial basis")]#label("h-editorial-basis")
 
-#p[#text("The first edition was prepared from ")#inline-code("technical-reference.md")#text(", reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline ")#inline-code("ff0c194")#text(". This second edition updates user procedures against the Pi-DOS 1.1 source tree as of 5 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.")]
+#p[#text("The first edition was prepared from ")#inline-code("technical-reference.md")#text(", reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline ")#inline-code("ff0c194")#text(". This third edition updates user procedures against the Pi-DOS 1.1 source tree as of 6 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.")]
+
+#p[#text("The review includes unreleased Apply, Turbo and storage-recovery changes.") #text("Their inclusion here does not mean they shipped in the published 1.1 image.")]
 
 #p[#text("The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.")]
 
@@ -1767,6 +1839,8 @@
 [#text("Appliance REBOOT, persisted test file and POWEROFF confirmed; power-loss recovery not established")],
 [#text("PC execution")],
 [#text("Native/Pi 5 COM, EXE, BAT and dynamic-recompiler checks; not a complete application suite")],
+[#text("Apply / Turbo")],
+[#text("ARM64/QEMU checks cover live changes, setup controls, Turbo toggling and CRT/LCD pixel restoration; real supervisor restarts and physical displays still need acceptance")],
 [#text("Display")],
 [#text("Pi 5 GPU/KMS checks and user CRT appearance report; each timing/display and latest static welcome need checks")],
 [#text("Keyboard/mouse")],
@@ -1896,6 +1970,8 @@
 [#link(label("h-changing-regional-settings"))[#text("Changing regional settings")]#text(" (p. ")#ref(label("h-changing-regional-settings"), form: "page", supplement: none)#text(")")],
 [#text("LCD displays")],
 [#link(label("h-using-a-flat-panel-display"))[#text("Using a flat-panel display")]#text(" (p. ")#ref(label("h-using-a-flat-panel-display"), form: "page", supplement: none)#text(")")],
+[#text("LCD monitoring overlay")],
+[#link(label("h-showing-cpu-load-and-temperature"))[#text("Showing CPU load and temperature")]#text(" (p. ")#ref(label("h-showing-cpu-load-and-temperature"), form: "page", supplement: none)#text(")")],
 [#text("Licenses and assets")],
 [#link(label("h-software-and-asset-notices"))[#text("Software and asset notices")]#text(" (p. ")#ref(label("h-software-and-asset-notices"), form: "page", supplement: none)#text(")")],
 [#text("Long filenames")],
@@ -1938,6 +2014,8 @@
 [#link(label("h-choosing-a-pc-sound-device"))[#text("Choosing a PC sound device")]#text(" (p. ")#ref(label("h-choosing-a-pc-sound-device"), form: "page", supplement: none)#text(")")],
 [#text("Timezone")],
 [#link(label("h-changing-regional-settings"))[#text("Changing regional settings")]#text(" (p. ")#ref(label("h-changing-regional-settings"), form: "page", supplement: none)#text(")")],
+[#text("Turbo speed")],
+[#link(label("h-cpu-profile-and-turbo"))[#text("CPU profile and Turbo")]#text(" (p. ")#ref(label("h-cpu-profile-and-turbo"), form: "page", supplement: none)#text(")")],
 [#text("Updates")],
 [#link(label("h-updating-a-compatible-installation"))[#text("Updating a compatible installation")]#text(" (p. ")#ref(label("h-updating-a-compatible-installation"), form: "page", supplement: none)#text(")")],
 [#text("USB data storage")],

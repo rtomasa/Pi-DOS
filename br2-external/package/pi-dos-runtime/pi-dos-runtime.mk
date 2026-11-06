@@ -14,6 +14,7 @@ PI_DOS_RUNTIME_CONF_OPTS = --enable-sdl2 \
 PI_DOS_RUNTIME_CONF_ENV = SDL2_CONFIG=$(STAGING_DIR)/usr/bin/sdl2-config LIBS="-lblkid"
 
 define PI_DOS_RUNTIME_APPLY_PATCHES
+	python3 $(BR2_EXTERNAL_PI_DOS_PATH)/../tools/phase0/install-session.py $(@D)
 	$(INSTALL) -m 0644 $(BR2_EXTERNAL_PI_DOS_PATH)/../src/common/mixer_api.h $(@D)/include/pidos_mixer_api.h
 	$(INSTALL) -m 0644 $(BR2_EXTERNAL_PI_DOS_PATH)/../src/runtime/mixer_control.h $(@D)/src/hardware/pidos_mixer_control.h
 	$(INSTALL) -m 0644 $(BR2_EXTERNAL_PI_DOS_PATH)/../src/runtime/image_switch.h $(@D)/src/ints/pidos_image_switch.h

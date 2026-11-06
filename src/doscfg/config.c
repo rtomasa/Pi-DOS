@@ -85,7 +85,8 @@ const CfgSpec cfg_specs[K_COUNT] = {
  S("pidos","net_windows","C:\\WINDOWS",PAGE_NETWORK),
  S("pidos","audio_output","hdmi",PAGE_SYSTEM),
  /* Missing on existing installations: never interrupt their normal startup. */
- S("pidos","first_boot","done",-1), S("pidos","cpu_default","done",-1)
+ S("pidos","first_boot","done",-1), S("pidos","cpu_default","done",-1),
+ S("pidos","turbo_mhz","0",PAGE_CPU), S("pidos","shortcut_turbo","Ctrl+Alt+T",PAGE_SYSTEM)
 };
 const char *card_names[CARD_COUNT] = {"None", "Tandy sound", "AdLib",
  "Creative Game Blaster / CMS", "Sound Blaster 2.0", "Sound Blaster Pro 2 (default)",
@@ -145,6 +146,13 @@ int cfg_set(int key, const char *value) {
  if(valid) for(i=0;value[i];++i) if((unsigned char)value[i]<32 || (unsigned char)value[i]>126) valid=0;
  if(!valid) { strcpy(cfg_error,"Invalid or overlong configuration value."); return 0; }
  switch(key) {
+ case K_CPU_TYPE: valid=one_of(value,"auto|286|386|486|pentium"); break;
+ case K_CPU_CORE: valid=one_of(value,"auto|normal|dynamic_rec"); break;
+ case K_CPU_CYCLES:
+  valid=one_of(value,"auto|max") || number(value,1,2000000,10) ||
+    (!strncmp(value,"fixed ",6) && number(value+6,1,2000000,10)); break;
+ case K_TURBO_MHZ:
+  valid=!strcmp(value,"0") || (number(value,1,200,10) && cpu_turbo_speed_find(values[K_CPU_TYPE],values[K_CPU_CYCLES],atoi(value))>=0); break;
  case K_CPU_DEFAULT: valid=one_of(value,"pending|done"); break;
  case K_FIRST_BOOT: valid=one_of(value,"pending|clock|done"); break;
  case K_AUDIO_OUTPUT: valid=one_of(value,"hdmi|jack|usb"); break;
@@ -173,7 +181,7 @@ int cfg_set(int key, const char *value) {
  case K_CONTROLLER_SWAP: case K_JOY_TIMED: case K_JOY_AUTOFIRE: case K_LCD_LINEAR: case K_LCD_HUD:
   valid=one_of(value,"true|false"); break;
  case K_SHORTCUT_REBOOT: case K_SHORTCUT_POWEROFF: case K_SHORTCUT_PAUSE:
- case K_SHORTCUT_SCREENSHOT: case K_SHORTCUT_NEXT_CD: case K_SHORTCUT_NEXT_FLOPPY:
+ case K_SHORTCUT_SCREENSHOT: case K_SHORTCUT_NEXT_CD: case K_SHORTCUT_NEXT_FLOPPY: case K_SHORTCUT_TURBO:
   valid=pidos_shortcut_key(value)>=0; break;
  case K_MONITOR: valid=one_of(value,"lcd|crt"); break;
  case K_LCD_MODE: valid=lcd_mode_find(value)>=0; break;
@@ -244,8 +252,15 @@ int cfg_select_cpu(int profile) {
  const CpuProfile *p;
  if(profile<0 || profile>=PROFILE_COUNT) { strcpy(cfg_error,"Select a CPU profile first."); return 0; }
  p=&cpu_profiles[profile];
- return cfg_set(K_CPU_TYPE,p->type) && cfg_set(K_CPU_CORE,p->core) && cfg_set(K_CPU_CYCLES,p->cycles) &&
-        cfg_set(K_CPU_DEFAULT,"done");
+ if(strcmp(values[K_CPU_TYPE],p->type)) cfg_set(K_TURBO_MHZ,"0");
+ if(!cfg_set(K_CPU_TYPE,p->type) || !cfg_set(K_CPU_CORE,p->core) || !cfg_set(K_CPU_CYCLES,p->cycles) ||
+    !cfg_set(K_CPU_DEFAULT,"done")) return 0;
+ cfg_normalize_turbo(); return 1;
+}
+void cfg_normalize_turbo(void) {
+ if(strcmp(values[K_TURBO_MHZ],"0") &&
+    (!number(values[K_TURBO_MHZ],1,200,10) || cpu_turbo_speed_find(values[K_CPU_TYPE],values[K_CPU_CYCLES],atoi(values[K_TURBO_MHZ]))<0))
+  cfg_set(K_TURBO_MHZ,"0");
 }
 int cfg_card(void) {
  int gus=same(values[K_GUS],"true"), tandy=same(values[K_TANDY],"on") ||
@@ -282,7 +297,7 @@ void cfg_select_card(int card) {
 }
 void cfg_reset_page(int page) {
  int i;
- if(page==PAGE_CPU) { cfg_select_cpu(cfg_cpu_default()); return; }
+ if(page==PAGE_CPU) { cfg_select_cpu(cfg_cpu_default()); cfg_set(K_TURBO_MHZ,"0"); return; }
  for(i=0;i<K_COUNT;++i) if(cfg_specs[i].page==page) cfg_set(i,cfg_specs[i].default_value);
  if(page==PAGE_SOUND) cfg_select_midi(DEFAULT_MIDI_PROFILE);
 }
@@ -394,22 +409,20 @@ static int write_config(FILE *out) {
  }
  return !ferror(out) && ftell(out)<=CFG_CAPACITY;
 }
-int cfg_save_changes(const char *path) {
- char temporary[CFG_PATH_SIZE],backup[CFG_PATH_SIZE];
- char *dot,*slash,*backslash,*base; FILE *out; int ok;
-#ifdef __WATCOMC__
- unsigned int attributes;
-#endif
- if(strlen(path)>=CFG_PATH_SIZE-5) { strcpy(cfg_error,"Configuration path is too long."); return 0; }
- if(!cfg_changed()) return 1;
- if(dirty[K_SHORTCUT_REBOOT] || dirty[K_SHORTCUT_POWEROFF] || dirty[K_SHORTCUT_PAUSE] ||
-    dirty[K_SHORTCUT_SCREENSHOT] || dirty[K_SHORTCUT_NEXT_CD] || dirty[K_SHORTCUT_NEXT_FLOPPY]) {
-  int a,b;
-  for(a=K_SHORTCUT_REBOOT;a<=K_SHORTCUT_NEXT_FLOPPY;++a) {
-   int code=pidos_shortcut_key(values[a]);
+int cfg_validate(void) {
+ if(strcmp(values[K_TURBO_MHZ],"0") && cpu_turbo_speed_find(values[K_CPU_TYPE],values[K_CPU_CYCLES],atoi(values[K_TURBO_MHZ]))<0) {
+  strcpy(cfg_error,"Choose a Turbo speed above the CPU profile speed, or disable Turbo."); return 0;
+ }
+ {
+  int a,ia,ib,code; int shortcuts[7];
+  for(a=0;a<6;++a) shortcuts[a]=K_SHORTCUT_REBOOT+a;
+  shortcuts[6]=K_SHORTCUT_TURBO;
+  for(ia=0;ia<7;++ia) {
+   a=shortcuts[ia];
+   code=pidos_shortcut_key(values[a]);
    if(code<0) { strcpy(cfg_error,"Choose a supported system shortcut before saving."); return 0; }
-   for(b=a+1;code>0 && b<=K_SHORTCUT_NEXT_FLOPPY;++b)
-    if(code==pidos_shortcut_key(values[b])) {
+   for(ib=ia+1;code>0 && ib<7;++ib)
+    if(code==pidos_shortcut_key(values[shortcuts[ib]])) {
      strcpy(cfg_error,"System shortcuts must use different key combinations."); return 0;
     }
   }
@@ -417,9 +430,8 @@ int cfg_save_changes(const char *path) {
  if(cfg_midi()==MIDI_EXTERNAL && !*cfg_get(K_MIDI_PORT)) {
   strcpy(cfg_error,"Choose a connected USB MIDI destination in MIDI settings before saving."); return 0;
  }
- if((dirty[K_RAM] || dirty[K_CPU_TYPE]) &&
-   ((same(values[K_CPU_TYPE],"286") && atoi(values[K_RAM])>16) ||
-    (one_of(values[K_CPU_TYPE],"8086|80186") && atoi(values[K_RAM])>1))) {
+ if((same(values[K_CPU_TYPE],"286") && atoi(values[K_RAM])>16) ||
+    (one_of(values[K_CPU_TYPE],"8086|80186") && atoi(values[K_RAM])>1)) {
   strcpy(cfg_error,"This CPU cannot address the selected RAM. Reduce RAM or choose a newer CPU."); return 0;
  }
  if(same(cfg_get(K_NE2000),"true") && same(cfg_get(K_NET_STARTUP),"native-ipx") &&
@@ -429,6 +441,52 @@ int cfg_save_changes(const char *path) {
  if(same(cfg_get(K_NE2000),"true") && same(cfg_get(K_NET_STARTUP),"windows") && same(cfg_get(K_IPX),"true")) {
   strcpy(cfg_error,"Windows uses its own network drivers. Disable the built-in IPX tunnel."); return 0;
  }
+ return 1;
+}
+int cfg_apply_key(int key) {
+ return (key>=K_CPU_TYPE && key<=K_SPEAKER) ||
+  (key>=K_VOL_MASTER && key<=K_VOL_USB_CD) ||
+  (key>=K_VOODOO && key<=K_GLIDE) ||
+  (key>=K_MIDI_PROFILE && key<=K_MIDI_DELAY) ||
+  (key>=K_SHORTCUT_REBOOT && key<=K_SHORTCUT_NEXT_FLOPPY) ||
+  key==K_TURBO_MHZ || key==K_SHORTCUT_TURBO;
+}
+int cfg_import_apply(const char *path) {
+ FILE *in=fopen(path,"r"); char line[256],section[CFG_VALUE_SIZE]="",name[CFG_VALUE_SIZE],value[CFG_VALUE_SIZE];
+ int key,ok=1; char *equals;
+ if(!in) return 0;
+ while(fgets(line,sizeof(line),in)) {
+  if(line[0]=='[') { sscanf(line,"[%79[^]]]",section); continue; }
+  equals=strchr(line,'='); if(!equals) continue;
+  *equals++=0; equals[strcspn(equals,"\r\n")]=0;
+  if(strlen(line)>=sizeof(name) || strlen(equals)>=sizeof(value)) {ok=0;continue;}
+  strcpy(name,line); strcpy(value,equals);
+  for(key=0;key<K_COUNT;++key) if(cfg_apply_key(key) && same(section,cfg_specs[key].section) && same(name,cfg_specs[key].key))
+   if(!cfg_set(key,value)) ok=0;
+ }
+ if(ferror(in)) ok=0;
+ fclose(in); return ok;
+}
+int cfg_export_apply(const char *path) {
+ FILE *out; int key,ok=1;
+ if(!cfg_validate()) return 0;
+ out=fopen(path,"wb");
+ if(!out) { strcpy(cfg_error,"Cannot create the Apply request in C:\\TEMP."); return 0; }
+ for(key=0;key<K_COUNT && ok;++key) if(cfg_apply_key(key))
+  ok=fprintf(out,"[%s]\r\n%s=%s\r\n",cfg_specs[key].section,cfg_specs[key].key,values[key])>=0;
+ if(fclose(out)) ok=0;
+ if(!ok) { remove(path); strcpy(cfg_error,"Could not write the complete Apply request."); }
+ return ok;
+}
+int cfg_save_changes(const char *path) {
+ char temporary[CFG_PATH_SIZE],backup[CFG_PATH_SIZE];
+ char *dot,*slash,*backslash,*base; FILE *out; int ok;
+#ifdef __WATCOMC__
+ unsigned int attributes;
+#endif
+ if(strlen(path)>=CFG_PATH_SIZE-5) { strcpy(cfg_error,"Configuration path is too long."); return 0; }
+ if(!cfg_changed()) return 1;
+ if(!cfg_validate()) return 0;
  /* Only pending keys are changed; reload raw bytes to retain unrelated external edits. */
  if(!load_contents(path)) return 0;
  /* Persist the managed monitor profile when creating a new file. */

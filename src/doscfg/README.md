@@ -20,14 +20,40 @@ Setup and welcome titles include the project version from the root `VERSION`
 file, embedded when rebuilding the executable.
 
 Eight pages configure CPU, Memory, Video, Sound, Mixer, Input, Network and System settings. F5/F6
-change pages; Tab/Shift+Tab move focus; Enter edits; F2 saves all pages; Esc
-cancels. Selection dialogs support typing to filter, arrows and page keys.
+change pages; Tab/Shift+Tab move focus; Enter edits; F2 saves all pages and stays in setup; F4 applies; Esc
+exits without saving pending edits. Selection dialogs support typing to filter, arrows and page keys.
 **Restore defaults** (F3 or Alt+R) resets the current page only, pending Save.
 CPU defaults are 386DX 33 MHz for Pi 2/3 families, 486DX2 66 MHz for Pi 4
 families, and Pentium 120 MHz for Pi 5 families. The profile list marks all three board defaults and
 adds `[recommended]` to the current board's profile. Restore defaults selects
 that recommendation, pending Save and reboot.
 Existing installations retain their configuration until explicitly changed.
+
+## Apply and speed-only Turbo
+
+F4 / Apply activates CPU, sound, mixer and system-shortcut settings for the
+session; F2 saves all pages and stays in setup. RAM, video-card, Voodoo and transitions to/from 286
+require confirmation before the supervisor starts a new DOS session,
+without rebooting Linux. Session settings live under `/run` and do not overwrite
+`PIDOS.CFG`. Reopening setup imports applied settings; Exit does not undo a
+successful Apply. Writable `C:\TEMP` is required for the bounded request/result
+handoff to internal `Z:\SYSTEM\PIAPPLY.COM`. Apply is rejected inside Windows.
+
+The CPU page retains its nine profiles, which set normal speed, and adds a
+Turbo MHz list containing only higher speeds for the selected CPU family.
+`src/common/cpu_profiles.c` supplies the shared family/speed/cycle table. Existing
+profile budgets are preserved; additional entries are estimated performance
+presets and still need hardware/workload calibration. `[pidos] turbo_mhz=0`
+disables Turbo. Other values must belong to the selected CPU family. Automatic
+has no fixed-MHz Turbo. `[pidos] shortcut_turbo=Ctrl+Alt+T` is configurable and
+participates in shortcut conflict validation.
+
+The runtime changes only `[cpu] cycles` when toggling. It captures/restores the
+Normal budget and resets the toggle pair after a full Apply or external CPU
+configuration change. A two-second host notification is composited and restored
+on CRT and LCD surfaces, separately from the optional LCD CPU/temperature HUD.
+The Windows frontend shares speed fields and validation but keeps save-only
+hardware behavior and its existing live mixer.
 
 ## Monitor output
 
@@ -160,7 +186,7 @@ with 100 as normal maximum. Arrow keys adjust by 5%, or
 choose a preset/custom stereo value. On first entering Mixer, the utility reads
 the running hardware via `CONFIG -ALL -GET` and levels via `MIXER`. When selected
 hardware matches, enabled channels update immediately through
-`Z:\SYSTEM\MIXER.COM /NOSHOW`. The page shows LIVE or AFTER REBOOT. Cancel restores
+`Z:\SYSTEM\MIXER.COM /NOSHOW`. The page shows LIVE or AFTER REBOOT. Exit restores
 the starting levels (at MIXER's whole-percent precision); Save keeps the preview.
 Pending hardware changes suspend preview and restore the original live levels.
 Unavailable live control falls back to saving for reboot. A writable `C:\TEMP`
@@ -250,14 +276,15 @@ The System page configures these shortcuts under `[pidos]`:
 | `shortcut_screenshot` | Ctrl+Alt+PrintScreen | Save a PNG to `C:\SYSTEM\CAPTURES` |
 | `shortcut_next_cd` | Ctrl+Alt+F4 | Next image in mounted CD image sets |
 | `shortcut_next_floppy` | Ctrl+Alt+F5 | Next image in mounted floppy image sets |
+| `shortcut_turbo` | Ctrl+Alt+T | Toggle configured Normal/Turbo speed |
 
 Choices are `none`, `Ctrl+Alt+Delete`, `Ctrl+Alt+F1` through `Ctrl+Alt+F10`,
-and `Ctrl+Alt+PrintScreen`. F12 remains the emulator's Host key. Use Up/Down or
+`Ctrl+Alt+PrintScreen`, and `Ctrl+Alt+T`. F12 remains the emulator's Host key. Use Up/Down or
 Tab to reach fields below the visible System rows; the More indicators also
 scroll with the mouse. Duplicate assignments are rejected before saving;
 hand-edited duplicates are disabled at boot in the table's order.
 Invalid hand-edited shortcuts fall back to their defaults and log a diagnostic.
-Save and reboot to apply shortcut changes.
+Apply activates shortcut changes immediately; Save keeps them for future boots.
 
 Reboot and poweroff use PID 1's existing synchronized shutdown. Pause runs on
 key release; repeat the shortcut or press Escape to resume. Disabling a shortcut
@@ -367,12 +394,12 @@ and closed before renaming the previous configuration to `PIDOS.BAK` and moving
 the new file into place. A failed replacement attempts to restore the original.
 Existing temporary recovery files are never overwritten. Read errors, DOS
 read-only attributes, size limits (24 KiB), invalid input and write/rename errors
-are reported. Hardware and regional changes apply after reboot; mixer changes can also be
-previewed immediately as described above. `REBOOT` or Ctrl+Alt+Delete performs
+are reported. Apply activates supported hardware and shortcuts; regional settings
+remain reboot-only. Mixer changes can also be previewed immediately as described above. `REBOOT` or Ctrl+Alt+Delete performs
 a full Pi reboot and reloads the saved configuration. Save application data first.
 
 When the current three settings do not match a profile, the interface shows
-Custom settings with no profile preselected. Cancel never saves. Missing keys
+Custom settings with no profile preselected. Exit never saves. Missing keys
 inherit the packaged defaults. Manual advanced CPU settings can still be edited
 with `EDIT`.
 

@@ -99,6 +99,9 @@ static int apply(int channel,const char *value) {
  if(system(command)==-1) return 0;
  strcpy(applied[channel],value); return 1;
 }
+void live_commit(void) {
+ int i; for(i=0;i<CHANNELS;++i) strcpy(original[i],applied[i]);
+}
 void live_cancel(void) {
  int i;
  if(state==1) for(i=0;i<CHANNELS;++i)
@@ -121,7 +124,7 @@ void live_update(int mixer_page) {
  }
 }
 const char *live_status(void) {
- if(state==1 && matching) return "LIVE: active channels apply now; Cancel restores starting levels.";
+ if(state==1 && matching) return "LIVE: active channels apply now; Exit restores unsaved preview levels.";
  if(state==1) return "AFTER REBOOT: selected sound hardware differs from the running setup.";
  return "AFTER REBOOT: live mixer unavailable; settings can still be saved.";
 }

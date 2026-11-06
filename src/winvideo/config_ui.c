@@ -85,10 +85,18 @@ static const char *field_value(const Field *field)
 {
     int index;
     if (field->type == FIELD_CPU) {
-        index = cfg_profile(); return index >= 0 ? cpu_profiles[index].label : "Custom";
+        index = cfg_profile();
+        if(index >= 0) return cpu_profiles[index].label;
+        return cpu_speed_from_cycles(cfg_get(K_CPU_TYPE),cfg_get(K_CPU_CYCLES))>=0 ? cpu_family_label(cfg_get(K_CPU_TYPE)) : "Custom";
     }
     if (field->type == FIELD_CARD) {
         index = cfg_card(); return index >= 0 ? card_names[index] : "Custom";
+    }
+    if (field->key == K_TURBO_MHZ) {
+        static char speed[48];
+        index = cpu_turbo_speed_find(cfg_get(K_CPU_TYPE),cfg_get(K_CPU_CYCLES),atoi(cfg_get(K_TURBO_MHZ)));
+        if (index >= 0) { sprintf(speed,"%d MHz",cpu_speeds[index].mhz); return speed; }
+        return "Disabled";
     }
     if (field->key >= 0) return cfg_get(field->key);
     return "Open...";
@@ -181,8 +189,8 @@ static void fill_fields(HWND dialog, PageState FAR *state, int selected)
     else if (state->page == PAGE_CPU) {
         Field *f = &state->fields[0];
         f->key = -1; f->type = FIELD_CPU; f->label = "CPU profile"; f->choices = NULL; f->catalog = NULL;
-        f->help = "Select the same CPU profiles as DOS PIDOSCFG. Reboot Pi-DOS to apply.";
-        state->count = 1;
+        f->help = "The CPU profile sets normal speed. Turbo offers faster speeds; Save applies next startup.";
+        state->count = 1 + form_cpu_fields(state->fields + 1);
     } else if (state->page == PAGE_MEMORY) {
         Field *f = &state->fields[0];
         f->key = K_RAM; f->type = FIELD_CHOICE; f->label = "Memory (MiB)";
@@ -282,6 +290,7 @@ void pv_options(HWND owner)
     }
     fclose(file);
     if (!cfg_load(CONFIG_PATH)) { MessageBox(owner, cfg_error, "Pi-DOS settings", MB_OK | MB_ICONSTOP); return; }
+    cfg_normalize_turbo();
     choices = GlobalAlloc(GMEM_MOVEABLE, (DWORD)VALUE_LIMIT * CFG_VALUE_SIZE);
     choice_values = choices ? GlobalLock(choices) : NULL;
     if (!choice_values) {

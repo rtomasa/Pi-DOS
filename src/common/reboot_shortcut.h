@@ -10,6 +10,8 @@
 void PauseDOSBox(bool pressed);
 void CAPTURE_ScreenShotEvent(bool pressed);
 void PiDosNextImage(bool cdrom);
+void PiDosSessionPrepare();
+void PiDosTurboToggle();
 static bool pi_dos_reboot_requested = false;
 static unsigned char pi_dos_shortcut_held[SDL_NUM_SCANCODES] = {};
 
@@ -25,12 +27,13 @@ static int pi_dos_shortcut_code(const char *name, int fallback)
     if (!value) return fallback;
     char *end=nullptr;
     long code=strtol(value,&end,10);
-    return *value && !*end && code>=0 && code<=12 ? (int)code : fallback;
+    return *value && !*end && code>=0 && code<=13 ? (int)code : fallback;
 }
 static bool pi_dos_reboot_shortcut(const SDL_Event &event, bool ctrl, bool alt)
 {
     const char *supervised=getenv("PI_DOS_SUPERVISED");
     if (!supervised || strcmp(supervised,"1") || getppid()!=1) return false;
+    PiDosSessionPrepare();
     if (event.type!=SDL_KEYDOWN && event.type!=SDL_KEYUP) return false;
     const SDL_Scancode key=event.key.keysym.scancode==SDL_SCANCODE_SYSREQ ?
         SDL_SCANCODE_PRINTSCREEN : event.key.keysym.scancode;
@@ -51,14 +54,15 @@ static bool pi_dos_reboot_shortcut(const SDL_Event &event, bool ctrl, bool alt)
     if (!ctrl || !alt || (event.key.keysym.mod & (KMOD_SHIFT|KMOD_GUI))) return false;
     /* Linux evdev also reports the Print Screen key as SysRq. */
     int code=(key==SDL_SCANCODE_PRINTSCREEN || key==SDL_SCANCODE_SYSREQ)?12:
+        key==SDL_SCANCODE_T ? 13 :
         (key==SDL_SCANCODE_DELETE || key==SDL_SCANCODE_KP_PERIOD)?1:
         (key>=SDL_SCANCODE_F1 && key<=SDL_SCANCODE_F10 ? key-SDL_SCANCODE_F1+2 : 0);
     if (!code) return false;
     const char *names[]={"PI_DOS_SHORTCUT_REBOOT","PI_DOS_SHORTCUT_POWEROFF","PI_DOS_SHORTCUT_PAUSE",
-                        "PI_DOS_SHORTCUT_SCREENSHOT","PI_DOS_SHORTCUT_NEXT_CD","PI_DOS_SHORTCUT_NEXT_FLOPPY"};
-    const int defaults[]={1,0,0,12,5,6};
+                        "PI_DOS_SHORTCUT_SCREENSHOT","PI_DOS_SHORTCUT_NEXT_CD","PI_DOS_SHORTCUT_NEXT_FLOPPY","PI_DOS_SHORTCUT_TURBO"};
+    const int defaults[]={1,0,0,12,5,6,13};
     int action=0;
-    for (int i=0;i<6;++i) if (code==pi_dos_shortcut_code(names[i],defaults[i])) { action=i+1; break; }
+    for (int i=0;i<7;++i) if (code==pi_dos_shortcut_code(names[i],defaults[i])) { action=i+1; break; }
     if (!action) return false;
     pi_dos_shortcut_held[key]=(unsigned char)action;
     if (event.key.repeat || action==3 || pi_dos_reboot_requested) return true;
@@ -68,6 +72,7 @@ static bool pi_dos_reboot_shortcut(const SDL_Event &event, bool ctrl, bool alt)
 #endif
         return true;
     }
+    if (action==7) { PiDosTurboToggle(); return true; }
     if (action==5 || action==6) { PiDosNextImage(action==5); return true; }
     /* PID 1 owns storage synchronization and emulator teardown for both actions. */
     if (kill(1,action==1?SIGINT:SIGTERM)==0) {

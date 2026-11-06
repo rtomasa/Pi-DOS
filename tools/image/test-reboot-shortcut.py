@@ -29,7 +29,9 @@ static int fake_access(const char *path, int mode) { assert(!strcmp(path, "/run/
 #define C_SDL2 1
 #define C_SSHOT 1
 #include "reboot_shortcut.h"
-static int pauses=0, screenshots=0, cds=0, floppies=0;
+static int pauses=0, screenshots=0, cds=0, floppies=0, turbos=0;
+void PiDosSessionPrepare() {}
+void PiDosTurboToggle() { ++turbos; }
 void PauseDOSBox(bool pressed) { assert(pressed); ++pauses; }
 void CAPTURE_ScreenShotEvent(bool pressed) { assert(pressed); ++screenshots; }
 void PiDosNextImage(bool cdrom) { if(cdrom) ++cds; else ++floppies; }
@@ -118,6 +120,16 @@ int main() {
     event.type=SDL_KEYUP; event.key.repeat=0; event.key.keysym.scancode=SDL_SCANCODE_SYSREQ;
     assert(pi_dos_reboot_shortcut(event,false,false));
     assert(!pi_dos_shortcut_held[SDL_SCANCODE_PRINTSCREEN]);
+    event.type=SDL_KEYDOWN; event.key.repeat=0; event.key.keysym.scancode=SDL_SCANCODE_T;
+    assert(pi_dos_reboot_shortcut(event,true,true) && turbos==1);
+    event.key.repeat=1;
+    assert(pi_dos_reboot_shortcut(event,true,true) && turbos==1);
+    event.type=SDL_KEYUP;
+    assert(pi_dos_reboot_shortcut(event,false,false));
+    event.type=SDL_KEYDOWN; event.key.repeat=0;
+    assert(pi_dos_reboot_shortcut(event,true,true) && turbos==2);
+    event.type=SDL_KEYUP;
+    assert(pi_dos_reboot_shortcut(event,false,false));
     parent=2; event.type=SDL_KEYDOWN;
     assert(!pi_dos_reboot_shortcut(event,true,true));
     assert(calls==4);

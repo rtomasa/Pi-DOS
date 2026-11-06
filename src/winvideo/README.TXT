@@ -32,6 +32,12 @@ Save writes C:\SYSTEM\PIDOS.CFG using the same presets, validation and
 preservation rules as DOS PIDOSCFG. The prior configuration is kept in
 C:\SYSTEM\PIDOS.BAK. Close without saving discards pending changes.
 Exit Windows and reboot Pi-DOS to apply saved settings.
+The CPU profile sets normal speed; Turbo offers only higher MHz presets
+for that CPU family. No separate Normal speed control is shown.
+System includes Turbo shortcut (default Ctrl+Alt+T). These additions remain
+save-only here. Once loaded at startup, Turbo toggles speed without changing
+the CPU model/core, with a brief notification on CRT and LCD. The existing
+live Volume panel keeps its current behavior.
 
 These settings control emulated hardware and physical audio/display output.
 Windows driver pages configure Windows itself. Choose matching Windows

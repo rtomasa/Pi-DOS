@@ -4,10 +4,10 @@
 #include <string.h>
 
 /* Deliberately exclude F12 (the emulator's Host key). Shared C89 validation. */
-#define PIDOS_SHORTCUT_CHOICES "none=None|Ctrl+Alt+Delete|Ctrl+Alt+F1|Ctrl+Alt+F2|Ctrl+Alt+F3|Ctrl+Alt+F4|Ctrl+Alt+F5|Ctrl+Alt+F6|Ctrl+Alt+F7|Ctrl+Alt+F8|Ctrl+Alt+F9|Ctrl+Alt+F10|Ctrl+Alt+PrintScreen"
+#define PIDOS_SHORTCUT_CHOICES "none=None|Ctrl+Alt+Delete|Ctrl+Alt+F1|Ctrl+Alt+F2|Ctrl+Alt+F3|Ctrl+Alt+F4|Ctrl+Alt+F5|Ctrl+Alt+F6|Ctrl+Alt+F7|Ctrl+Alt+F8|Ctrl+Alt+F9|Ctrl+Alt+F10|Ctrl+Alt+PrintScreen|Ctrl+Alt+T"
 
 #ifdef PIDOS_INPUT_OPTIONS_VALIDATE
-/* 0=disabled, 1=Delete (including keypad Delete), 2..11=F1..F10, 12=PrintScreen. */
+/* 0=disabled, 1=Delete (including keypad Delete), 2..11=F1..F10, 12=PrintScreen, 13=T. */
 static int pidos_shortcut_key(const char *value)
 {
     char word[24];
@@ -15,6 +15,7 @@ static int pidos_shortcut_key(const char *value)
     if (!value || strlen(value) >= sizeof(word)) return -1;
     for (i=0; value[i]; ++i) word[i]=(char)tolower((unsigned char)value[i]);
     word[i]=0;
+    if (!strcmp(word,"ctrl+alt+t")) return 13;
     if (!strcmp(word,"none")) return 0;
     if (!strcmp(word,"ctrl+alt+delete")) return 1;
     if (!strcmp(word,"ctrl+alt+printscreen")) return 12;

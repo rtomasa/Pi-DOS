@@ -73,6 +73,7 @@ done
 for name in io linux dos; do
     install -m 0644 "$root/src/runtime/usb_storage_$name.h" "$dosbox/src/dos/pidos_usb_storage_$name.h"
 done
+python3 tools/phase0/install-session.py "$dosbox"
 for source_patch in "$root"/patches/dosbox-x/*.patch; do
     [[ -f "$source_patch" ]] || continue
     if patch --batch --forward --fuzz=0 --dry-run -p1 -d "$dosbox" -i "$source_patch" >/dev/null 2>&1; then

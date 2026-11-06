@@ -5,7 +5,26 @@ Run PIDOSCFG at the DOS prompt. Click the CPU, Memory, Video, Sound, Mixer,
 Input and System tabs, or use F5/F6. Tab/Shift+Tab moves focus; Enter edits a field.
 Up/Down or Home/End chooses a CPU profile or RAM size. Other lists support
 typing to search, arrows, Home/End and PgUp/PgDn. Click an item to select it.
-F2 or Alt+S saves ALL pages. Escape, Alt+C or Alt+X cancels.
+F2 or Alt+S saves ALL pages and stays in setup. F4 applies hardware and shortcuts.
+Escape, Alt+C or Alt+X closes setup without saving unapplied edits.
+Apply does not save PIDOS.CFG. CPU and sound apply live; RAM/video/Voodoo
+and transitions to/from 286 ask before restarting DOS only, without rebooting
+the Pi. DOS startup files run again. Other System, Input and Network changes
+need Save and REBOOT. Apply needs writable C:\TEMP and is unavailable in Windows.
+Reopening setup restores applied session settings so F2 can keep them.
+
+The CPU profile sets normal speed. Turbo below the profiles offers only higher
+MHz presets from the selected family (and Disabled):
+  286:     8, 12, 16, 20, 25
+  386DX:   16, 20, 25, 33, 40
+  486:     25, 33, 50, 66, 75, 100, 120, 133
+  Pentium: 60, 66, 75, 90, 100, 120, 133, 150, 166, 200
+Turbo starts disabled. Select a speed, then Apply; Ctrl+Alt+T toggles speeds
+without changing CPU model/core. System can change the shortcut. A two-second
+top-right notification appears on CRT and LCD, independent of the CPU HUD.
+Automatic has no fixed-MHz Turbo choices. Windows settings save these fields
+for the next Pi-DOS startup; its existing live Volume panel is unchanged.
+
 Restore defaults (F3 or Alt+R) resets the CURRENT page, pending Save.
 A mouse is optional. Enter activates the focused button.
 
@@ -38,7 +57,7 @@ The utility also supports Hercules monochrome text mode.
 The 3dfx Voodoo checkbox is checked by default. Checked enables software
 Voodoo with 12 MiB of video memory; unchecked disables the hardware.
 Toggling it saves voodoo_card=software (or false), voodoo_maxmem=true and
-glide=false. Glide passthrough stays disabled. Reboot to apply changes.
+glide=false. Glide passthrough stays disabled. Apply restarts DOS for video changes.
 
 Sound: None, Tandy sound, AdLib, Creative Game Blaster/CMS, Sound Blaster
 2.0, Sound Blaster Pro 2 (default), Sound Blaster 16, or GUS Classic.
@@ -64,14 +83,14 @@ Connect external modules' audio outputs to your own speakers or mixer.
 Internal MIDI volume does not control an external module's audio.
 Assets are in C:\SYSTEM\MIDI: SC55.SF2, GMROLAND.SF2, MT32 and CM32L.
 Missing assets/devices disable MIDI for that boot and appear in DOS MIDI.
-Reboot after changing MIDI output or interface settings.
+Use Apply after changing MIDI output or interface settings. Save also keeps them.
 
 Mixer: left:right percentages from 0=mute to 100=normal maximum, including
 CD audio from images and USB drives. Only present mixer channels are shown.
 Use left/right arrows or [-]/[+] for 5% steps, or Enter for a preset
 or custom stereo value. Active channels apply IMMEDIATELY when the selected
 sound hardware matches the running setup. The page shows LIVE or AFTER
-REBOOT. Cancel restores starting live levels at whole-percent precision;
+REBOOT. Exit restores starting live levels at whole-percent precision;
 Save keeps them and saves edited levels for later boots. Hardware changes
 suspend preview and restore the original live levels. Inactive channels
 and unavailable live control take effect after reboot. Live queries need
@@ -116,7 +135,7 @@ Profiles:
 
 Fresh images select the board's CPU before DOS starts, including when welcome
 is skipped. The CPU tab marks all three defaults and recommends this board's
-profile. Restore defaults selects that recommendation; Save and reboot apply it.
+profile. Restore defaults selects that recommendation; Apply activates it. Save keeps it.
 Updates and moving the card to another board preserve saved CPU settings.
 Pi 2/3/Zero 2/CM3 use 386DX/33; Pi 4/400/CM4/CM4S use 486DX2/66;
 Pi 5/500/CM5 use Pentium 120. Defaults reflect reported Pi-DOS hardware tests.
@@ -162,7 +181,7 @@ System tab: reboot, poweroff and pause accept None, Ctrl+Alt+Delete
 or Ctrl+Alt+F1-F10.
 Reboot defaults to Ctrl+Alt+Delete; poweroff and pause are disabled by default.
 Duplicate shortcuts cannot be saved. Repeat pause or press Escape to resume.
-Save and reboot to apply Input and System settings.
+Apply activates system shortcuts. Other Input/System settings need Save and REBOOT.
 
 NETWORK
 -------

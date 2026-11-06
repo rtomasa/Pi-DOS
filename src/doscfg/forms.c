@@ -1,12 +1,24 @@
 #include "forms.h"
 #include "input_options.h"
 #include <string.h>
+#include <stdio.h>
 const char *page_names[PAGE_COUNT] = {"CPU", "Memory", "Video", "Sound", "Mixer", "Input", "Network", "System"};
 static const char shortcut_choices[] = PIDOS_SHORTCUT_CHOICES;
 static unsigned mixer_channels = 1;
 void form_mixer_channels(unsigned mask) { mixer_channels = mask | 1; }
 const char *memory_sizes[MEMORY_COUNT] = {"1", "2", "4", "8", "16", "32", "64", "128"};
 #define ADD(k,t,l,c,f,h) do { fields[n].key=k; fields[n].type=t; fields[n].label=l; fields[n].choices=c; fields[n].catalog=f; fields[n].help=h; ++n; } while(0)
+int form_cpu_fields(Field *fields)
+{
+ static char turbo[400]; char item[64]; int i,n=0;
+ strcpy(turbo,"0=Disabled");
+ for(i=0;i<CPU_SPEED_COUNT;++i)
+  if(cpu_turbo_speed_find(cfg_get(K_CPU_TYPE),cfg_get(K_CPU_CYCLES),cpu_speeds[i].mhz)==i) {
+   sprintf(item,"|%d=%d MHz",cpu_speeds[i].mhz,cpu_speeds[i].mhz); strcat(turbo,item);
+  }
+ ADD(K_TURBO_MHZ,FIELD_CHOICE,"Turbo speed",turbo,0,"Only speeds above the CPU profile. Disabled when no faster speed is available.");
+ return n;
+}
 int form_fields(int page, Field *fields)
 {
  int n=0,card=cfg_card(),i;
@@ -91,6 +103,7 @@ int form_fields(int page, Field *fields)
   ADD(K_SHORTCUT_PAUSE,FIELD_CHOICE,"Pause shortcut",shortcut_choices,0,"Pause emulation. Repeat this shortcut, or press Escape, to resume.");
   ADD(K_SHORTCUT_SCREENSHOT,FIELD_CHOICE,"Screenshot shortcut",shortcut_choices,0,"Save a PNG in C:\\SYSTEM\\CAPTURES. Requires writable C: storage.");
   ADD(K_SHORTCUT_NEXT_CD,FIELD_CHOICE,"Next CD shortcut",shortcut_choices,0,"Cycle CD images loaded together with IMGMOUNT, without exiting a game.");
+  ADD(K_SHORTCUT_TURBO,FIELD_CHOICE,"Turbo shortcut",shortcut_choices,0,"Toggle Normal/Turbo speed. Notification appears on CRT and LCD.");
   ADD(K_SHORTCUT_NEXT_FLOPPY,FIELD_CHOICE,"Next floppy shortcut",shortcut_choices,0,"Cycle floppy images loaded together with IMGMOUNT in A: or B:.");
  }
  return n;
