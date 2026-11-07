@@ -13,6 +13,13 @@ the Pi. DOS startup files run again. Other System, Input and Network changes
 need Save and REBOOT. Apply needs writable C:\TEMP and is unavailable in Windows.
 Reopening setup restores applied session settings so F2 can keep them.
 
+System's Enable VGA666 checkbox selects GPIO VGA output (default off).
+Save and cleanly REBOOT or POWEROFF to update BOOT for the next start.
+Apply does not activate it. CRT/LCD remains a separate monitor setting.
+VGA666 uses GPIO 2-21, disables the header UART, and carries no audio.
+Select USB or supported analogue audio. To return to HDMI, uncheck, Save
+and cleanly restart. Matching new Image and BOOT assets are required.
+
 The CPU profile sets normal speed. Turbo below the profiles offers only higher
 MHz presets from the selected family (and Disabled):
   286:     8, 12, 16, 20, 25

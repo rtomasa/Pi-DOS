@@ -1,0 +1,16 @@
+Honor firmware EDIDs on simple VGA bridges without a physical DDC bus.
+VGA666 normally has no DDC wiring, but the Pi-DOS mode list is in initramfs.
+
+--- a/drivers/gpu/drm/bridge/simple-bridge.c
++++ b/drivers/gpu/drm/bridge/simple-bridge.c
+@@ -54,6 +54,10 @@ static int simple_bridge_get_modes(struct drm_connector *connector)
+ 	const struct drm_edid *drm_edid;
+ 	int ret;
+ 
++	ret = drm_edid_override_connector_update(connector);
++	if (ret > 0)
++		return ret;
++
+ 	if (sbridge->next_bridge->ops & DRM_BRIDGE_OP_EDID) {
+ 		drm_edid = drm_bridge_edid_read(sbridge->next_bridge, connector);
+ 		if (!drm_edid)

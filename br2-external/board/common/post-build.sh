@@ -52,6 +52,8 @@ text = ('# Pi-DOS persistent configuration. Save keeps settings; DOS PIDOSCFG Ap
         'timezone=Europe/Madrid\n'
         '# Physical audio: hdmi (default), jack (Pi 3/4), usb (external DAC).\n'
         'audio_output=hdmi\n'
+        '# GPIO VGA666 output; Save, then clean reboot/poweroff to update BOOT.\n'
+        'vga666=false\n'
         '# Monitor: crt (follow DOS timings, default) or lcd (fixed mode).\n'
         'monitor=crt\nlcd_mode=1024x768\nlcd_aspect=4:3\n'
         '# SDL2 linear filtering for LCD scaling; disabled by default.\n'
@@ -95,6 +97,7 @@ manual = source.read_text().replace('\n', '\r\n').encode('ascii')
 PYNET
 python3 "$project/tools/dos/midi-assets.py" --install "$target/pi-dos/midi-assets"
 install -D -m 0644 "$project/dac-crt.bin" "$target/lib/firmware/edid/dac-crt.bin"
+python3 "$project/tools/image/vga666.py" edid "$project/dac-crt.bin" "$target/lib/firmware/edid/vga666.bin"
 mkdir -p "$target/dosdata" "$target/run" "$target/tmp" "$target/proc" "$target/sys"
 # No system shell, getty, login or init scripts are needed by the C supervisor.
 test -x "$target/init"

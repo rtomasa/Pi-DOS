@@ -1,5 +1,10 @@
 # Linux patches
 
+`0002-vga-firmware-edid-without-ddc.patch` makes the simple VGA bridge honor a
+firmware EDID before falling back to generic modes. Standard VGA666 boards
+lack a physical DDC bus; this supplies the Pi-DOS CRT mode list on both VC4
+and RP1 DPI. The default HDMI path is unaffected. See [VGA666](../../docs/vga666.md).
+
 `0001-usb-floppy-status-polling.patch` caps UFI/CBI USB floppy interrupt-IN
 status polling at eight milliseconds. It matches the interface class/subclass/
 protocol, without a vendor/product list. Faster intervals and other transports

@@ -1,7 +1,7 @@
 # Pi-DOS technical reference and manual foundation
 
 Version covered: **Pi-DOS 1.1 plus unreleased changes**. Source review:
-**6 November 2026**. Apply, Turbo, XMS/EMS controls and storage-recovery improvements describe
+**6 November 2026**. Apply, Turbo, XMS/EMS, VGA666 and storage-recovery improvements describe
 the current source tree; they are newer than the published 1.1 build. See the
 [changelog](../CHANGELOG.md) for the release boundary.
 The original hardware evidence, feature audit and development history use the
@@ -99,7 +99,7 @@ Raspberry Pi firmware -> ARM64 Linux + embedded initramfs -> /init (PID 1)
                                                            |
                                     DOS applications / PIDOSCFG / games
 
-DOS video -> SDL2 surface/GLES presentation -> DRM/KMS -> HDMI -> display/CRT adapter
+DOS video -> SDL2 surface/GLES presentation -> DRM/KMS -> HDMI or GPIO VGA666 -> display
 DOS sound + internal MIDI + CD audio -> emulator mixer -> SDL2/ALSA -> selected output
 USB HID -> Linux evdev/libudev-zero -> SDL2 -> DOS keyboard/mouse/joystick devices
 DOS files -> managed adapters -> FAT32 C:, USB FAT/exFAT, floppy, CD, images or ZIP
@@ -418,7 +418,7 @@ effect on the next boot unless imported through a supported setup operation.
 | CPU profile, Turbo, emulated sound/MIDI and mixer | Apply immediately; transitions to/from a 286 require a DOS-session restart |
 | DOS RAM, XMS/EMS, emulated video adapter and Voodoo | Confirm and restart the DOS session, without rebooting the Pi |
 | System shortcuts, including Turbo | Apply immediately |
-| CRT/LCD output, LCD overlay, physical audio output, regional settings, diagnostics, controllers and networking | Save and reboot the Pi |
+| VGA666, CRT/LCD output, LCD overlay, physical audio output, regional settings, diagnostics, controllers and networking | Save and reboot the Pi; VGA666 synchronizes BOOT at clean shutdown |
 
 Successful Apply closes setup. Session overrides live under `/run` and expire
 at whole-Pi reboot/poweroff. Reopening setup imports them so Save can retain
@@ -460,6 +460,7 @@ until Save or Apply.
 | XMS / EMS | Both enabled (`[dos] xms=true`, `ems=true`) |
 | Video | S3 Trio64; software Voodoo enabled, max memory enabled, Glide passthrough disabled |
 | Monitor | CRT; retained LCD preferences start at 1024x768, 4:3, linear filtering off |
+| GPIO VGA666 | Disabled (`[pidos] vga666=false`); HDMI is the default output |
 | Sound | Sound Blaster Pro 2, base 220h, IRQ 7, DMA 1; PC speaker enabled |
 | MIDI | Roland SC-55 SoundFont profile; Intelligent MPU-401, port 330h, automatic IRQ |
 | Physical audio | Primary HDMI |
@@ -777,6 +778,39 @@ VIDEOMOD lists advertised host display modes and DOS BIOS/VESA modes; `/P`
 pages the output. An advertised mode is not proof of physical monitor lock.
 With diagnostics enabled, VIDEO.LOG records requested guest raster/rate,
 rendered dimensions, host selection and presented surface/renderer sizes.
+
+### 8.6 VGA666 GPIO output
+
+System's **Enable VGA666** checkbox writes `[pidos] vga666=true/false`, default
+false. It is excluded from session Apply. Save and whole-Pi reboot/poweroff
+activate the preference through a managed BOOT include; Windows shares the
+saved setting. CRT/LCD presentation remains a separate choice.
+
+The existing `vc4-kms-v3d`, `vc4-kms-v3d-pi4` and `vc4-kms-v3d-pi5` overlays
+remain selected by model. `vc4-kms-vga666` attaches the DPI DAC to VC4 on older
+boards or RP1 on Pi 5/CM5. The pinned kernel exports compatible symbols for all
+18 shipped board trees. Built-in simple-bridge, display-connector and RP1 DPI
+drivers are explicit kernel requirements. RP1 has reduced colour precision
+with the standard VGA666 pinout; physical modes/GBM/EGL still need acceptance.
+
+`src/init/video_boot.c` resolves partition 1 beside the real data partition,
+checks the Pi-DOS MBR signature and BOOT FAT label, then temporarily mounts it
+at clean shutdown. Only the owned `pidos-video.txt` include is replaced, with
+exclusive temporary creation, file synchronization, rename and directory sync.
+Missing prerequisite assets, an unmanaged include or a stale temporary file
+rejects replacement. The original boot configuration and command line are kept.
+
+The enabled include disables the GPIO UART, loads the DAC overlay and selects
+`pidos-vga666.txt`. Its command line forces VGA-1 on, disables both HDMI outputs
+and loads `edid/vga666.bin`. The analog EDID retains base/custom CRT timings
+while omitting HDMI/audio metadata. A simple-bridge patch honors this firmware
+override even without DDC. DRM selection follows the active boot flag rather
+than pending settings, finding the VGA card independently of its card number.
+
+Standard VGA666 consumes GPIO 2–21 and carries no audio. The optional DDC bus
+stays disabled; GPIO 0/1 require level shifting before any VGA DDC connection.
+Image-only upgrades do not install the required BOOT assets. See
+[VGA666 setup and recovery](vga666.md) for board families, wiring and recovery.
 
 ## 9. Sound, MIDI and physical audio
 
@@ -1682,6 +1716,7 @@ console diagnostics can be enabled temporarily through the board procedure.
 | Attributes/sharing/ZIP | Focused real DOS API/backend checks with host simulated kernel/media as applicable | Do not certify every application or physical device |
 | Networking | Configuration/backend/host connectivity and packaging checks | Physical Pi LAN, native IPX peers and WfW file sharing pending |
 | FAT32 expansion | Native sparse 2/64 GiB image checks | ARM64 partition refresh and physical cards pending |
+| VGA666 | BOOT include transactions/recovery, HDMI/RP1 discovery fixtures, analog EDID preservation and all 18 board overlay chains; supervisor/kernel builds | Physical colour, timing changes and Pi 5 GBM/EGL need acceptance |
 | Apply/Turbo | Focused ARM64/QEMU checks cover live CPU/sound updates, setup F4/Exit, Turbo on/off, repeat suppression, restart requests, invalid settings and CRT/LCD pixel restoration | Interposed paths and dummy SDL do not prove a real PID 1 restart or physical display behavior |
 | Windows configuration | Shared settings/packaging and installer recovery checks; dedicated live-mixer integration | Real Windows upgrade/uninstall, vendor-driver playback and Pi hardware acceptance remain separate |
 | Release packaging | Source snapshot, image inspection, archive checks and artifact hashes | A valid bundle does not establish physical hardware compatibility |
@@ -2072,7 +2107,8 @@ the subsequent changes; this is not a second commit-by-commit audit.
 | `d5c5cda`, `e1da368`, `342bbe9` | 2026-11-05 | Add local/rolling release packaging, bundle driver inputs and automate PDF dependencies. Published 1.1 was built from `342bbe9`. |
 | `3dc8c53` | 2026-11-05 | Add storage-expansion feedback and RAM-backed recovery diagnostics after the published 1.1 build. |
 | Apply/Turbo development | 2026-11-06 review | Add DOS Apply/session restart, speed-only Turbo, configurable shortcut and CRT/LCD notice; retain save-only Windows hardware settings. Remove the separate Normal speed field, filter Turbo to faster choices and rename DOS Cancel to Exit. |
-| Current working tree | 2026-11-06 review | Add independent XMS/EMS checkboxes in DOS and Windows Memory settings, preserving enabled defaults and advanced EMS modes. DOS Apply restarts the session; Windows saves for the next Pi-DOS boot. |
+| XMS/EMS development | 2026-11-06 review | Add independent XMS/EMS checkboxes in DOS and Windows Memory settings, preserving enabled defaults and advanced EMS modes. DOS Apply restarts the session; Windows saves for the next Pi-DOS boot. |
+| Current working tree | 2026-11-06 review | Add System VGA666 setting, managed BOOT synchronization, analog mode assets, firmware-EDID bridge support and model-aware VC4/RP1 discovery. |
 
 ### Source precedence and supporting references
 

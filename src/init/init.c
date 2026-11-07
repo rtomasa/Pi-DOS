@@ -34,6 +34,7 @@
 #include "cpu_profiles.h"
 #include "audio.h"
 #include "video.h"
+#include "video_boot.h"
 #include "mixer.h"
 #include "midi.h"
 #include "midi_profiles.h"
@@ -326,29 +327,19 @@ static bool make_config(enum storage storage, const char *user_config, bool sess
 
 static void select_video(void)
 {
-    /* Pi 5 exposes a render GPU card as well as its display card. */
+    bool vga666 = pi_dos_vga666_active("/proc/cmdline");
+    /* Pi 5 has separate V3D, HDMI and RP1 DPI cards. Select the active output. */
     for (int attempt = 0; attempt < 50; ++attempt) {
-        glob_t paths = {0};
-        if (!glob("/sys/class/drm/card*-HDMI-*/status", 0, NULL, &paths)) {
-            for (size_t i = 0; i < paths.gl_pathc; ++i) {
-                char state[32], index[16], node[64];
-                unsigned int card;
-                if (read_line(paths.gl_pathv[i], state, sizeof(state)) &&
-                    !strcmp(state, "connected") &&
-                    sscanf(paths.gl_pathv[i], "/sys/class/drm/card%u-", &card) == 1) {
-                    snprintf(node, sizeof(node), "/dev/dri/card%u", card);
-                    if (access(node, R_OK | W_OK)) continue;
-                    snprintf(index, sizeof(index), "%u", card);
-                    setenv("SDL_KMSDRM_DEVICE_INDEX", index, 1);
-                    globfree(&paths);
-                    return;
-                }
-            }
+        int card = pi_dos_video_card("/sys/class/drm", "/dev/dri", vga666);
+        if (card >= 0) {
+            char index[16];
+            snprintf(index, sizeof(index), "%d", card);
+            setenv("SDL_KMSDRM_DEVICE_INDEX", index, 1);
+            return;
         }
-        globfree(&paths);
         delay_ms(100);
     }
-    dprintf(2, "Pi-DOS: no connected HDMI card after 5 seconds; trying SDL discovery\n");
+    dprintf(2, "Pi-DOS: no connected %s card after 5 seconds; trying SDL discovery\n", vga666 ? "VGA666" : "HDMI");
 }
 
 static void finish(enum storage storage, bool restart)
@@ -356,6 +347,10 @@ static void finish(enum storage storage, bool restart)
     dprintf(2, "Pi-DOS: synchronizing storage before %s\n", restart ? "reboot" : "poweroff");
     pi_dos_power_button_close(&power_button);
     pi_dos_network_stop(&network);
+    char device[PATH_MAX];
+    data_device(device, sizeof(device));
+    if (!pi_dos_video_boot_sync(user_config_path(storage), device))
+        dprintf(2, "Pi-DOS: VGA666 BOOT update failed; verify pidos-video.txt, BOOT assets and free space before next boot.\n");
     pi_dos_diagnostics_stop(&diagnostics);
     sync();
     DIR *usb = opendir("/run/pi-dos-usb");

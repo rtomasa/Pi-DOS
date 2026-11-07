@@ -57,6 +57,13 @@ hardware behavior and its existing live mixer.
 
 ## Monitor output
 
+**System > Enable VGA666** selects a GPIO VGA666 adapter, disabled by default.
+Save and cleanly reboot or power off: PID 1 updates a managed BOOT include for
+the next startup. Apply leaves this setting pending. The model-specific KMS
+overlays remain selected automatically, including RP1 DPI on Pi 5. CRT/LCD
+selects presentation separately. VGA carries no audio; select a suitable audio
+output. See [VGA666 setup, wiring and recovery](../../docs/vga666.md).
+
 System offers **Monitor type: CRT / LCD**. Fresh installations and Restore
 defaults select CRT. LCD preferences default to 1024x768 and 4:3 aspect.
 Select an LCD resolution from 640x480, 800x600, 832x624, 1024x768, 1280x720 or 1920x1080, as advertised by the supplied

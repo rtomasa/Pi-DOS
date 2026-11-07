@@ -20,7 +20,7 @@ You do not need to understand the underlying system to begin. This guide starts 
 
 This edition describes Pi-DOS 1.1, reviewed against the project sources on 6 November 2026. It includes session Apply, CPU profiles and faster Turbo speeds, CRT/LCD Turbo notifications, the bundled MIDI assets and Windows configuration and mixer controls. Existing installations may retain earlier settings. When this guide says *default*, it means the current fresh-image setting, unless stated otherwise.
 
-Apply, Turbo, XMS/EMS controls and the storage-recovery improvements describe newer source changes
+Apply, Turbo, XMS/EMS, VGA666 and the storage-recovery improvements describe newer source changes
 that are not in the published 1.1 image. Use a build containing those changes
 for the corresponding instructions.
 
@@ -521,7 +521,7 @@ Some lists support searching by typing. Mouse selection is optional. F3 changes 
 | --- | --- |
 | CPU, Turbo, emulated sound/MIDI, mixer or shortcuts | Apply; switching to or from a 286 restarts DOS |
 | DOS memory, XMS/EMS, video adapter or Voodoo | Apply and confirm a DOS-session restart |
-| CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network | Save and reboot Pi-DOS |
+| VGA666, CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network | Save and reboot Pi-DOS |
 
 #### To change a setting
 
@@ -744,7 +744,7 @@ Self-modifying code, copy protection, unusual drivers and timing-sensitive demos
 
 ## Chapter 6 Setting Up Your Display
 
-There are two separate display choices: the video adapter seen by DOS software and the monitor profile used to present its image on your physical screen. Choose both to suit your equipment and application.
+The emulated video adapter, physical output (HDMI or VGA666), and CRT/LCD presentation are separate choices. Choose each to suit your equipment and application.
 
 ### Choosing an emulated video adapter
 
@@ -765,6 +765,34 @@ CRT is the default monitor profile. It follows the guest's rendered dimensions a
 Connect a VGA CRT to the Pi's HDMI output through a suitable active **HDMI-to-VGA DAC**. Use a display and adapter that can accept the selected timing. A listed mode is not proof that a physical monitor will lock onto it. Pi-DOS supplies VGA-era display timings, not original Hercules electrical output.
 
 CRT mode does not add artificial scanlines, phosphor effects or shadow masks. Its intended appearance comes from a physical CRT. It also avoids software aspect correction; physical monitor geometry determines the final shape.
+
+### Using a GPIO VGA666 adapter
+
+VGA666 provides VGA through the GPIO header instead of an HDMI-to-VGA adapter.
+The build supports the existing Pi 2/3, Pi 4 and Pi 5 graphics paths, including
+Zero 2 and Compute Module families where the required GPIO signals are exposed.
+Board overlay checks have passed; physical picture and mode changes still need
+checking. Pi 5 has reduced colour precision with standard VGA666 wiring.
+
+#### To select VGA666 output
+
+1. In PIDOSCFG's System tab, check **Enable VGA666** (off by default).
+2. Choose CRT or LCD to suit your display. Select USB audio or a supported
+   analogue output if needed; VGA666 has no audio.
+3. Press F2 to Save, exit setup and use a clean REBOOT or POWEROFF. The system
+   updates BOOT for the next startup. Use POWEROFF if the adapter is not yet
+   fitted. Apply does not activate this option.
+4. With power off, fit the VGA666 board and connect the display, then start the Pi.
+
+To return to HDMI, uncheck the option, Save and cleanly restart. Windows exposes
+the same saved setting under System. VGA666 uses GPIO 2–21 and disables the
+header UART; avoid other devices on those pins. CRT/LCD controls and Turbo
+notifications work through the selected output as usual.
+
+Use an image containing the matching new Image and BOOT assets. If VGA output
+is unusable, restore the disabled `pidos-video.txt` template on BOOT from another
+computer and set `vga666=false` in `SYSTEM/PIDOS.CFG` on the data partition.
+See [VGA666 setup and recovery](../vga666.md) for the files, wiring and limits.
 
 ### Using a flat-panel display
 
@@ -1577,6 +1605,7 @@ The directory C:\IMAGES used in examples is a suggested user-created location, n
 | Video | S3 Trio64 |
 | Voodoo | Software enabled, maximum memory, Glide passthrough off |
 | Monitor | CRT |
+| VGA666 GPIO output | Disabled; HDMI selected |
 | Retained LCD preferences | 1024x768, 4:3, linear filtering off |
 | LCD CPU/temperature overlay | Disabled |
 | PC sound | SB Pro 2, 220h, IRQ 7, DMA 1 |
@@ -1715,7 +1744,7 @@ Preserve the original notices included with tools and data. Consult the reposito
 
 The first edition was prepared from `technical-reference.md`, reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline `ff0c194`. This third edition updates user procedures against the Pi-DOS 1.1 source tree as of 6 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.
 
-The review includes unreleased Apply, Turbo, XMS/EMS controls and storage-recovery changes.
+The review includes unreleased Apply, Turbo, XMS/EMS, VGA666 and storage-recovery changes.
 Their inclusion here does not mean they shipped in the published 1.1 image.
 
 The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.
@@ -1733,6 +1762,7 @@ Implemented support, host checks and physical confirmation are different kinds o
 | PC execution | Native/Pi 5 COM, EXE, BAT and dynamic-recompiler checks; not a complete application suite |
 | Apply / Turbo | ARM64/QEMU checks cover live changes, setup controls, Turbo toggling and CRT/LCD pixel restoration; real supervisor restarts and physical displays still need acceptance |
 | Display | Pi 5 GPU/KMS checks and user CRT appearance report; each timing/display and latest static welcome need checks |
+| VGA666 | All 18 board overlay chains, BOOT updates and DRM-selection fixtures checked; physical output and Pi 5 colour/GBM/EGL need acceptance |
 | Keyboard/mouse | Virtual keyboard-path checks and user hotplug record; every application not certified |
 | Controllers | Virtual controller checks; physical game calibration and hotplug pending |
 | Audio | Short speaker/FM/SB checks; long audible, analogue-jack and USB acceptance pending |
@@ -1833,6 +1863,7 @@ Use this alphabetical index to find a subject. Section links are clickable in th
 | Validation status | [Appendix E Compatibility and Verification Notes](#appendix-e-compatibility-and-verification-notes) |
 | Version information | [Your first command prompt](#your-first-command-prompt) |
 | Video modes | [Inspecting available modes](#inspecting-available-modes) |
+| VGA666 adapter | [Using a GPIO VGA666 adapter](#using-a-gpio-vga666-adapter) |
 | Volume labels | [Labels and media safety](#labels-and-media-safety) |
 | Wildcards | [Using wildcards](#using-wildcards) |
 | Windows for Workgroups | [Windows for Workgroups](#windows-for-workgroups) |

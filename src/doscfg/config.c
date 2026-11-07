@@ -87,7 +87,8 @@ const CfgSpec cfg_specs[K_COUNT] = {
  /* Missing on existing installations: never interrupt their normal startup. */
  S("pidos","first_boot","done",-1), S("pidos","cpu_default","done",-1),
  S("pidos","turbo_mhz","0",PAGE_CPU), S("pidos","shortcut_turbo","Ctrl+Alt+T",PAGE_SYSTEM),
- S("dos","xms","true",PAGE_MEMORY), S("dos","ems","true",PAGE_MEMORY)
+ S("dos","xms","true",PAGE_MEMORY), S("dos","ems","true",PAGE_MEMORY),
+ S("pidos","vga666","false",PAGE_SYSTEM)
 };
 const char *card_names[CARD_COUNT] = {"None", "Tandy sound", "AdLib",
  "Creative Game Blaster / CMS", "Sound Blaster 2.0", "Sound Blaster Pro 2 (default)",
@@ -192,6 +193,7 @@ int cfg_set(int key, const char *value) {
  case K_LCD_ASPECT: valid=one_of(value,"4:3|original"); break;
  case K_RAM: valid=one_of(value,"1|2|4|8|16|32|64|128"); break;
  case K_RAM_KB: valid=!strcmp(value,"0"); break;
+ case K_VGA666: valid=one_of(value,"true|false"); break;
  case K_XMS: valid=one_of(value,"true|false|1|0"); break;
  case K_EMS: valid=one_of(value,"true|false|emsboard|emm386|1|0"); break;
  case K_MACHINE: valid=video_profile_find(value)>=0; break;

@@ -57,6 +57,10 @@ the replacement. Actual Windows guest upgrade/uninstall still needs checking.
 
 ### Shared Pi-DOS settings
 
+System's **Enable VGA666** setting is save-only. Exit Windows and cleanly
+reboot Pi-DOS to synchronize BOOT and change the physical output. See
+[VGA666 setup](vga666.md) for the required BOOT assets and hardware limits.
+
 The Memory category includes native **Enable XMS** and **Enable EMS** checkboxes,
 both enabled by default. Save persists `[dos] xms` and `ems` for the next Pi-DOS
 boot; neither memory manager is changed in the running Windows session.

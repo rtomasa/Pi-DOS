@@ -224,7 +224,7 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
                        ('K_LCD_ASPECT',b'original'),('K_LCD_LINEAR',b'true')):
         assert set_value(key,value)
     fields = ctypes.create_string_buffer(16 * 128)
-    assert editor.form_fields(7, fields) == 17  # LCD, overlay, audio, region, diagnostics and shortcuts
+    assert editor.form_fields(7, fields) == 18  # LCD, VGA666, audio, region, diagnostics and shortcuts
     # Check exact field identity, type and an untouched guard after the array.
     class Field(ctypes.Structure):
         _fields_ = [('key',ctypes.c_int),('type',ctypes.c_int)] + [
@@ -239,7 +239,7 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert all(mixer_fields[i].choices == b'0|25|50|75|100' for i in range(mixer_count))
     assert all(b'Covox' not in mixer_fields[i].label for i in range(mixer_count))
     guarded=GuardedFields(); guarded.guard=0x123456789ABCDEF0
-    assert editor.form_fields(7, guarded.items) == 17
+    assert editor.form_fields(7, guarded.items) == 18
     assert guarded.guard == 0x123456789ABCDEF0
     hud=[f for f in guarded.items if f.key == keys['K_LCD_HUD']]
     assert len(hud)==1 and hud[0].type==2 and hud[0].label==b'CPU and temperature overlay'
@@ -254,7 +254,7 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert b'lcd_hud=true' in path.read_bytes()
     assert editor.cfg_load(encoded) and get('K_LCD_HUD') == b'true'
     assert set_value('K_MONITOR',b'crt')
-    assert editor.form_fields(7, fields) == 13
+    assert editor.form_fields(7, fields) == 14
     assert get('K_LCD_MODE') == b'1280x720'  # switching keeps LCD preferences
     assert get('K_LCD_LINEAR') == b'true'
     assert get('K_LCD_HUD') == b'true'  # switching preserves the hidden option
@@ -269,6 +269,14 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
 
     # Physical audio output is independent of the emulated sound card.
     assert get('K_AUDIO_OUTPUT') == b'hdmi'
+    assert get('K_VGA666') == b'false'
+    assert not set_value('K_VGA666', b'yes')
+    assert set_value('K_VGA666', b'true')
+    assert not editor.cfg_apply_key(keys['K_VGA666'])
+    assert editor.cfg_save_changes(encoded) and editor.cfg_load(encoded)
+    assert get('K_VGA666') == b'true' and b'vga666=true\r\n' in path.read_bytes()
+    editor.cfg_reset_page(7)
+    assert get('K_VGA666') == b'false'
     sound_card = get('K_SB_TYPE')
     for output in (b'jack', b'usb', b'hdmi'):
         assert set_value('K_AUDIO_OUTPUT', output)

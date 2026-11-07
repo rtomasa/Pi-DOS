@@ -10,6 +10,7 @@ import struct
 import subprocess
 import sys
 import tempfile
+from vga666 import analog_edid, boot_arguments
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'output/buildroot-arm64'
@@ -51,7 +52,7 @@ def main():
                  'pi-dos/drivez/BIN/ARJ.EXE', 'pi-dos/drivez/BIN/PIDOSCFG.EXE', 'dev/console',
                  'sbin/fsck.fat', 'sbin/fatlabel', 'usr/sbin/exfatlabel', 'usr/lib/locale/locale-archive',
                  'usr/lib/gconv/IBM437.so',
-                 'lib/firmware/edid/dac-crt.bin'):
+                 'lib/firmware/edid/dac-crt.bin', 'lib/firmware/edid/vga666.bin'):
         require(name in names, f'Missing initramfs file: {name}')
     with (images / 'rootfs.cpio').open('rb') as stream:
         packed_init = subprocess.check_output(['cpio', '-i', '--to-stdout', '--quiet', 'init'], stdin=stream)
@@ -134,6 +135,10 @@ def main():
         packed_edid = subprocess.check_output([
             'cpio', '-i', '--to-stdout', '--quiet', 'lib/firmware/edid/dac-crt.bin'], stdin=stream)
     require(packed_edid == (ROOT / 'dac-crt.bin').read_bytes(), 'Missing/stale CRT EDID in initramfs')
+    with (images / 'rootfs.cpio').open('rb') as stream:
+        packed_vga_edid = subprocess.check_output(['cpio', '-i', '--to-stdout', '--quiet',
+            'lib/firmware/edid/vga666.bin'], stdin=stream)
+    require(packed_vga_edid == analog_edid(packed_edid), 'Missing/stale analog VGA666 mode list')
     require(len(packed_edid) >= 128 and len(packed_edid) == (packed_edid[126] + 1) * 128
             and packed_edid[:8] == bytes.fromhex('00 ff ff ff ff ff ff 00')
             and all(sum(packed_edid[i:i + 128]) % 256 == 0
@@ -263,7 +268,8 @@ def main():
                     'USB_HID', 'SCSI', 'BLK_DEV_SD', 'BLK_DEV_SR', 'USB_STORAGE',
                     'USB_DWCOTG', 'USB_DWC2', 'USB_DWC3', 'MMC_BCM2835',
                     'MMC_BCM2835_MMC', 'MMC_SDHCI_IPROC', 'MMC_SDHCI_BRCMSTB', 'PCIE_BRCMSTB',
-                    'MFD_RP1', 'PINCTRL_RP1', 'DRM_VC4', 'DRM_V3D', 'DRM_LOAD_EDID_FIRMWARE', 'SND_SOC',
+                    'MFD_RP1', 'PINCTRL_RP1', 'DRM_VC4', 'DRM_V3D', 'DRM_RP1_DPI',
+                    'DRM_SIMPLE_BRIDGE', 'DRM_DISPLAY_CONNECTOR', 'DRM_LOAD_EDID_FIRMWARE', 'SND_SOC',
                     'SND_USB_AUDIO', 'SND_RAWMIDI', 'SND_SEQUENCER', 'SND_SEQ_MIDI',
                     'SND_PROC_FS', 'BCM_VIDEOCORE', 'BCM2835_VCHIQ', 'SND_BCM2835',
                     'INET', 'PACKET', 'NETDEVICES', 'BCMGENET', 'MACB',
@@ -314,6 +320,10 @@ def main():
             subprocess.check_call([
                 str(linux_dirs[0].parent / 'scripts/dtc/fdtoverlay'),
                 '-i', str(images / name), '-o', str(Path(temporary) / name), str(images / overlay)])
+            subprocess.check_call([
+                str(linux_dirs[0].parent / 'scripts/dtc/fdtoverlay'),
+                '-i', str(images / name), '-o', str(Path(temporary) / ('vga-' + name)),
+                str(images / overlay), str(images / 'vc4-kms-vga666.dtbo')])
     disk = images / ('pi-dos-arm64-diagnostic-sdcard.img' if diagnostic else 'pi-dos-arm64-sdcard.img')
     with disk.open('rb') as stream:
         mbr = stream.read(512)
@@ -568,6 +578,14 @@ def main():
             require(len(packed.decode().splitlines()) == 1, 'BOOT cmdline.txt must be a single line')
             require('drm.edid_firmware=HDMI-A-1:edid/dac-crt.bin,HDMI-A-2:edid/dac-crt.bin'
                     in packed.decode().split(), 'BOOT command line lacks the CRT EDID override')
+    default_cmdline = subprocess.check_output([
+        str(mcopy), '-i', f'{disk}@@{partitions[0]["start_sector"] * 512}', '::cmdline.txt', '-']).decode()
+    for name, expected in (
+            ('pidos-video.txt', (ROOT/'br2-external/board/raspberrypi/pidos-video.txt').read_bytes()),
+            ('pidos-vga666.txt', boot_arguments(default_cmdline).encode())):
+        packed = subprocess.check_output([
+            str(mcopy), '-i', f'{disk}@@{partitions[0]["start_sector"] * 512}', f'::{name}', '-'])
+        require(packed == expected, f'BOOT VGA666 configuration missing/stale: {name}')
     evidence = {'scope': 'Static image validation only; this rebuilt image requires hardware validation',
                 'diagnostic': diagnostic,
                 'cpu_baseline': 'Cortex-A53 / ARMv8-A',

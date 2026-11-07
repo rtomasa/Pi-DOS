@@ -121,6 +121,11 @@ All targeted models use this same partition layout and data volume.
 
 ### Custom DAC EDID
 
+GPIO VGA666 output has a separate analog EDID and managed BOOT include. Enable
+it in PIDOSCFG's System tab, Save and cleanly reboot. The existing per-model
+KMS overlays are retained, including Pi 5's RP1 DPI path. See the
+[VGA666 setup and recovery guide](vga666.md) for required assets and validation.
+
 The image embeds `dac-crt.bin` at `/lib/firmware/edid/dac-crt.bin` in its
 initramfs. `cmdline.txt` assigns it to HDMI-A-1 and HDMI-A-2 using
 `drm.edid_firmware`; the kernel fragment explicitly enables EDID firmware

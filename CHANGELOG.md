@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **VGA666 output:** Add a System checkbox, model-aware graphics support and
+  automatic BOOT updates at clean shutdown. Save and reboot to switch outputs.
 - **Memory options:** Enable or disable XMS and EMS in DOS setup and the Windows
   tool. DOS Apply restarts the DOS session; Windows saves for the next Pi-DOS boot.
 - **Apply settings:** Use **F4** in DOS `PIDOSCFG` to apply changes without

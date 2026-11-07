@@ -34,6 +34,10 @@ from pathlib import Path
 import sys
 path = Path(sys.argv[1])
 text = path.read_text()
+overlay_key = 'BR2_LINUX_KERNEL_INTREE_DTSO_NAMES='
+text = '\n'.join(line[:-1] + ' overlays/vc4-kms-vga666"'
+                 if line.startswith(overlay_key) and 'overlays/vc4-kms-vga666' not in line else line
+                 for line in text.splitlines()) + '\n'
 if 'BR2_PACKAGE_PI_DOS_RUNTIME=y\n' in text:
     lines = [line for line in text.splitlines()
              if not line.startswith('BR2_PACKAGE_FLUIDSYNTH=')

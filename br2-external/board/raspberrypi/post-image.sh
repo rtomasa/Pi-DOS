@@ -22,6 +22,7 @@ for firmware in bootcode.bin start.elf fixup.dat start4.elf fixup4.dat LICENCE.b
     install -m 0644 "$BINARIES_DIR/rpi-firmware/$firmware" "$boot/"
 done
 install -m 0644 "$board/config.txt" "$boot/config.txt"
+install -m 0644 "$board/pidos-video.txt" "$boot/pidos-video.txt"
 install -m 0644 "$board/cmdline.txt" "$boot/cmdline.txt"
 if [[ "${PI_DOS_DIAGNOSTIC:-0}" == 1 ]]; then
     python3 - "$boot/cmdline.txt" <<'PY'
@@ -33,6 +34,7 @@ words += ['loglevel=7', 'ignore_loglevel', 'log_buf_len=1M']
 path.write_text(' '.join(words) + '\n')
 PY
 fi
+python3 "$BR2_EXTERNAL_PI_DOS_PATH/../tools/image/vga666.py" cmdline "$boot/cmdline.txt" "$boot/pidos-vga666.txt"
 printf '@ECHO OFF\r\nECHO reboot>C:\\SYSTEM\\CONTROL.REQ\r\nEXIT\r\n' > "$data/SYSTEM/REBOOT.BAT"
 printf '@ECHO OFF\r\nEXIT\r\n' > "$data/SYSTEM/POWEROFF.BAT"
 # Keep the personalized editor writable: PEDIT saves settings in its executable.

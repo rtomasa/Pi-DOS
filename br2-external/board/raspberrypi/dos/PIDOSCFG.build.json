@@ -3,9 +3,9 @@
   "source_sha256": {
     "VERSION": "1523e9e982ff804c6d979e1bb2c6f3d7bae35307e8ce458bffc0d12a442b98da",
     "src/doscfg/main.c": "5915a857a4bafa34386daa3194d0723075b1a15b55aa7f26c00ca2d54056d6b5",
-    "src/doscfg/config.c": "cdebbe48cac031abf937a3e551b7140960e113b9dbbda416959d1effef93cd7b",
-    "src/doscfg/config.h": "dfcdf9d6deee8307c0ac833bf9257950af79010042179f837dd04e29c3373929",
-    "src/doscfg/forms.c": "b47571a2fec4cb06aec255d22a96d21ecea84336eda09416807c7d9ac40234bd",
+    "src/doscfg/config.c": "7390acd874cd5122e6d08d7affba8e3cb1d0b84c90ba03736a34bc181753c747",
+    "src/doscfg/config.h": "5b78173c2eaaa2d7151c9bb6cea61bdf1ace338fa0bf6656969f1721cb6b3357",
+    "src/doscfg/forms.c": "ce823d45fc6d9fe1cb5af1e82e904c15c27fd9464657eb91b9f7e117e8602f6f",
     "src/doscfg/forms.h": "46fd450e930f29d0356dc696df75890649457a9f891fc5d25540b401a82183ec",
     "src/doscfg/live.c": "79dd7e3efe6b417b308f28ea70a4a0c0534b3b6343d4711f7cbfb193bea6a9f1",
     "src/doscfg/live.h": "d8515b3a3430ba78ab7bd5f38c3aafd6bcc38959da8ed8d4c980ac08237736a1",
@@ -23,5 +23,5 @@
     "tools/dos/toolchain.json": "13cbef97b8c3607083dbe8cddc9e971705292942ae2f76e8c9cdf197a3b3bd50"
   },
   "compiler_driver_sha256": "9bf1c208df56c8c154e08a4c42b05183b39e1f3c21e2c3f3b4fa9a66b81aa071",
-  "executable_sha256": "ea4a064713f31ac736f6af695e8455653fcb28ce44bc78e876c0fef738f687e5"
+  "executable_sha256": "b51cc22e6b02e1708046aa6d6c53abe9d91b694f0ac15bfb650721ffd7b87bf4"
 }

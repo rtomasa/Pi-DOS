@@ -80,7 +80,7 @@
 #v(6mm)
 #text(size: 10pt)[Edition 3 · 6 November 2026\ Source review: Pi-DOS 1.1 plus unreleased changes]
 #v(8mm)
-#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo, XMS/EMS controls and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
+#text(size: 10pt)[Updated against the Pi-DOS 1.1 project sources, setup documentation and technical reference. Apply, Turbo, XMS/EMS, VGA666 and storage-recovery improvements cover unreleased changes. This edition does not claim new physical hardware validation.]
 #v(4mm)
 #text(size: 10pt)[Names of example programs and files are illustrative. The MIDI SoundFonts and ROMs are bundled; games, Windows and some sound patches must be supplied separately where required.]
 #v(4mm)
@@ -122,7 +122,7 @@
 
 #p[#text("This edition describes Pi-DOS 1.1, reviewed against the project sources on 6 November 2026. It includes session Apply, CPU profiles and faster Turbo speeds, CRT/LCD Turbo notifications, the bundled MIDI assets and Windows configuration and mixer controls. Existing installations may retain earlier settings. When this guide says ")#emph[#text("default")]#text(", it means the current fresh-image setting, unless stated otherwise.")]
 
-#p[#text("Apply, Turbo, XMS/EMS controls and the storage-recovery improvements describe newer source changes") #text("that are not in the published 1.1 image. Use a build containing those changes") #text("for the corresponding instructions.")]
+#p[#text("Apply, Turbo, XMS/EMS, VGA666 and the storage-recovery improvements describe newer source changes") #text("that are not in the published 1.1 image. Use a build containing those changes") #text("for the corresponding instructions.")]
 
 #p[#text("This is a user guide rather than a record of development. It explains implemented behavior, but does not certify every Raspberry Pi, peripheral, game or Windows installation. Appendix E summarizes the hardware checks recorded in the technical reference and identifies features that still need physical confirmation.")]
 
@@ -592,7 +592,7 @@
 [#text("Apply; switching to or from a 286 restarts DOS")],
 [#text("DOS memory, XMS/EMS, video adapter or Voodoo")],
 [#text("Apply and confirm a DOS-session restart")],
-[#text("CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network")],
+[#text("VGA666, CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network")],
 [#text("Save and reboot Pi-DOS")],
 ), compact: false)
 
@@ -780,7 +780,7 @@
 
 #heading(level: 1)[#text("Chapter 6 Setting Up Your Display")]#label("h-chapter-6-setting-up-your-display")
 
-#p[#text("There are two separate display choices: the video adapter seen by DOS software and the monitor profile used to present its image on your physical screen. Choose both to suit your equipment and application.")]
+#p[#text("The emulated video adapter, physical output (HDMI or VGA666), and CRT/LCD presentation are separate choices. Choose each to suit your equipment and application.")]
 
 #heading(level: 2)[#text("Choosing an emulated video adapter")]#label("h-choosing-an-emulated-video-adapter")
 
@@ -799,6 +799,18 @@
 #p[#text("Connect a VGA CRT to the Pi's HDMI output through a suitable active ")#strong[#text("HDMI-to-VGA DAC")]#text(". Use a display and adapter that can accept the selected timing. A listed mode is not proof that a physical monitor will lock onto it. Pi-DOS supplies VGA-era display timings, not original Hercules electrical output.")]
 
 #p[#text("CRT mode does not add artificial scanlines, phosphor effects or shadow masks. Its intended appearance comes from a physical CRT. It also avoids software aspect correction; physical monitor geometry determines the final shape.")]
+
+#heading(level: 2)[#text("Using a GPIO VGA666 adapter")]#label("h-using-a-gpio-vga666-adapter")
+
+#p[#text("VGA666 provides VGA through the GPIO header instead of an HDMI-to-VGA adapter.") #text("The build supports the existing Pi 2/3, Pi 4 and Pi 5 graphics paths, including") #text("Zero 2 and Compute Module families where the required GPIO signals are exposed.") #text("Board overlay checks have passed; physical picture and mode changes still need") #text("checking. Pi 5 has reduced colour precision with standard VGA666 wiring.")]
+
+#procedure[#text("To select VGA666 output")]
+
+#items[#enum(start: 1, [#text("In PIDOSCFG's System tab, check ")#strong[#text("Enable VGA666")]#text(" (off by default).")], [#text("Choose CRT or LCD to suit your display. Select USB audio or a supported") #text("analogue output if needed; VGA666 has no audio.")], [#text("Press F2 to Save, exit setup and use a clean REBOOT or POWEROFF. The system") #text("updates BOOT for the next startup. Use POWEROFF if the adapter is not yet") #text("fitted. Apply does not activate this option.")], [#text("With power off, fit the VGA666 board and connect the display, then start the Pi.")])]
+
+#p[#text("To return to HDMI, uncheck the option, Save and cleanly restart. Windows exposes") #text("the same saved setting under System. VGA666 uses GPIO 2–21 and disables the") #text("header UART; avoid other devices on those pins. CRT/LCD controls and Turbo") #text("notifications work through the selected output as usual.")]
+
+#p[#text("Use an image containing the matching new Image and BOOT assets. If VGA output") #text("is unusable, restore the disabled ")#inline-code("pidos-video.txt")#text(" template on BOOT from another") #text("computer and set ")#inline-code("vga666=false")#text(" in ")#inline-code("SYSTEM/PIDOS.CFG")#text(" on the data partition.") #text("See ")#link("../vga666.md")[#text("VGA666 setup and recovery")]#text(" for the files, wiring and limits.")]
 
 #heading(level: 2)[#text("Using a flat-panel display")]#label("h-using-a-flat-panel-display")
 
@@ -1645,6 +1657,8 @@
 [#text("Software enabled, maximum memory, Glide passthrough off")],
 [#text("Monitor")],
 [#text("CRT")],
+[#text("VGA666 GPIO output")],
+[#text("Disabled; HDMI selected")],
 [#text("Retained LCD preferences")],
 [#text("1024x768, 4:3, linear filtering off")],
 [#text("LCD CPU/temperature overlay")],
@@ -1828,7 +1842,7 @@
 
 #p[#text("The first edition was prepared from ")#inline-code("technical-reference.md")#text(", reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline ")#inline-code("ff0c194")#text(". This third edition updates user procedures against the Pi-DOS 1.1 source tree as of 6 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.")]
 
-#p[#text("The review includes unreleased Apply, Turbo, XMS/EMS controls and storage-recovery changes.") #text("Their inclusion here does not mean they shipped in the published 1.1 image.")]
+#p[#text("The review includes unreleased Apply, Turbo, XMS/EMS, VGA666 and storage-recovery changes.") #text("Their inclusion here does not mean they shipped in the published 1.1 image.")]
 
 #p[#text("The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.")]
 
@@ -1853,6 +1867,8 @@
 [#text("ARM64/QEMU checks cover live changes, setup controls, Turbo toggling and CRT/LCD pixel restoration; real supervisor restarts and physical displays still need acceptance")],
 [#text("Display")],
 [#text("Pi 5 GPU/KMS checks and user CRT appearance report; each timing/display and latest static welcome need checks")],
+[#text("VGA666")],
+[#text("All 18 board overlay chains, BOOT updates and DRM-selection fixtures checked; physical output and Pi 5 colour/GBM/EGL need acceptance")],
 [#text("Keyboard/mouse")],
 [#text("Virtual keyboard-path checks and user hotplug record; every application not certified")],
 [#text("Controllers")],
@@ -2038,6 +2054,8 @@
 [#link(label("h-your-first-command-prompt"))[#text("Your first command prompt")]#text(" (p. ")#ref(label("h-your-first-command-prompt"), form: "page", supplement: none)#text(")")],
 [#text("Video modes")],
 [#link(label("h-inspecting-available-modes"))[#text("Inspecting available modes")]#text(" (p. ")#ref(label("h-inspecting-available-modes"), form: "page", supplement: none)#text(")")],
+[#text("VGA666 adapter")],
+[#link(label("h-using-a-gpio-vga666-adapter"))[#text("Using a GPIO VGA666 adapter")]#text(" (p. ")#ref(label("h-using-a-gpio-vga666-adapter"), form: "page", supplement: none)#text(")")],
 [#text("Volume labels")],
 [#link(label("h-labels-and-media-safety"))[#text("Labels and media safety")]#text(" (p. ")#ref(label("h-labels-and-media-safety"), form: "page", supplement: none)#text(")")],
 [#text("Wildcards")],

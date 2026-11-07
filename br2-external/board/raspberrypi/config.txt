@@ -32,3 +32,5 @@ dtoverlay=vc4-kms-v3d-pi5
 dtoverlay=dwc2,dr_mode=host
 [all]
 
+# PIDOSCFG manages this include at clean reboot/poweroff. HDMI remains default.
+include pidos-video.txt
