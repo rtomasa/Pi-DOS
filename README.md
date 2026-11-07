@@ -22,7 +22,7 @@ an actual CD. Pi-DOS connects these peripherals to the emulated DOS computer:
 | Hardware | What you can do |
 | --- | --- |
 | **VGA CRT through an HDMI-to-VGA DAC** | Connect the Pi's HDMI output to a real VGA CRT using a suitable active digital-to-analogue adapter. CRT mode follows DOS display modes and refresh rates, including VGA text near 70 Hz. The monitor and DAC must accept the selected timings. |
-| **GPIO VGA666 adapter** | Enable VGA666 in PIDOSCFG's System tab, Save and cleanly reboot. Uses model-specific KMS graphics support, including Pi 5 RP1. See [setup and hardware limits](docs/vga666.md). |
+| **GPIO VGA666 adapter** | Enable VGA666 in PIDOSCFG's System tab, Accept and cleanly reboot. Uses model-specific KMS graphics support, including Pi 5 RP1. See [setup and hardware limits](docs/vga666.md). |
 | **External USB floppy drive** | Access physical disks as A:, copy files, write to supported writable media and format supported disks. Capacity and format support depend on the drive. |
 | **External USB CD/DVD drive** | Access data CDs as D:, run DOS installers and change physical discs without manual mounting. The optical integration targets CDs, including when using DVD-drive hardware. |
 | **CD audio** | Play audio tracks from physical CDs in compatible USB optical drives and from supported disc images. Audio is extracted digitally into the Pi-DOS mixer and sent to the selected HDMI, analogue or USB audio output. Physical-disc and image audio have separate volume controls. |

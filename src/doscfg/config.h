@@ -56,8 +56,5 @@ void cfg_reset_page(int page);
 int cfg_save_changes(const char *path);
 int cfg_save(const char *path, int profile);
 int cfg_validate(void);
-int cfg_export_apply(const char *path);
-int cfg_import_apply(const char *path);
-int cfg_apply_key(int key);
 
 #endif

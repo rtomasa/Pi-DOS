@@ -24,8 +24,8 @@ int form_fields(int page, Field *fields)
  int n=0,card=cfg_card(),i;
  static const char *volnames[]={"Master output","Sound Blaster digital","AdLib / FM music","Gravis Ultrasound","Game Blaster / CMS","PC speaker","Tandy three-voice","Tandy DAC","Disney / Covox","Internal MIDI music","CD audio (image)","CD audio (USB)"};
  if(page==PAGE_MEMORY) {
-  ADD(K_XMS,FIELD_CHECKBOX,"Enable XMS",0,0,"Extended memory support. Enabled by default; Apply restarts DOS.");
-  ADD(K_EMS,FIELD_CHECKBOX,"Enable EMS",0,0,"Expanded memory support. Enabled by default; Apply restarts DOS.");
+  ADD(K_XMS,FIELD_CHECKBOX,"Enable XMS",0,0,"Extended memory support. Enabled by default; Accept saves; reboot to activate.");
+  ADD(K_EMS,FIELD_CHECKBOX,"Enable EMS",0,0,"Expanded memory support. Enabled by default; Accept saves; reboot to activate.");
  } else if(page==PAGE_VIDEO) {
   ADD(K_MACHINE,FIELD_VIDEO,"Video card",0,0,"Select the emulated video adapter. S3 Trio64 is the default.");
   ADD(K_VOODOO,FIELD_VOODOO,"3dfx Voodoo",0,0,"Checked enables software Voodoo emulation with 12 MiB of video RAM.");

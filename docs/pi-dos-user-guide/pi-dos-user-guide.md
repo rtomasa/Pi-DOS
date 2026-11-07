@@ -2,7 +2,7 @@
 
 A DOS-compatible computer for Raspberry Pi
 
-Edition 3 · 6 November 2026
+Edition 3 · 7 November 2026
 
 Source review: Pi-DOS 1.1 plus unreleased changes
 
@@ -18,9 +18,9 @@ You do not need to understand the underlying system to begin. This guide starts 
 
 ### About this guide
 
-This edition describes Pi-DOS 1.1, reviewed against the project sources on 6 November 2026. It includes session Apply, CPU profiles and faster Turbo speeds, CRT/LCD Turbo notifications, the bundled MIDI assets and Windows configuration and mixer controls. Existing installations may retain earlier settings. When this guide says *default*, it means the current fresh-image setting, unless stated otherwise.
+This edition describes Pi-DOS 1.1, reviewed against the project sources on 7 November 2026. It includes Accept/Cancel setup controls, CPU profiles and faster Turbo speeds, CRT/LCD Turbo notifications, the bundled MIDI assets and Windows configuration and mixer controls. Existing installations may retain earlier settings. When this guide says *default*, it means the current fresh-image setting, unless stated otherwise.
 
-Apply, Turbo, XMS/EMS, VGA666 and the storage-recovery improvements describe newer source changes
+Setup, Turbo, XMS/EMS, VGA666 and the storage-recovery improvements describe newer source changes
 that are not in the published 1.1 image. Use a build containing those changes
 for the corresponding instructions.
 
@@ -436,13 +436,13 @@ An optional **Pi-DOS Configuration** application supports Windows 3.1/3.11 and W
 4. If asked, close Control Panel and Pi-DOS Configuration before retrying. Setup replaces an older applet, including the former PIVIDEO entry.
 5. Accept the restart prompt when ready, then reopen Control Panel to use the new application.
 
-The **Display** page selects packaged modes for the configured S3 or ET4000 adapter. Changing the emulated adapter itself requires a new DOS session before installing or selecting its Windows driver: exit Windows, select the adapter in DOS PIDOSCFG, and Apply. Saving it in the Windows applet still requires a Pi-DOS reboot to activate it. Applying a Windows display mode requires restarting Windows. Available resolutions depend on the packaged driver catalogue and display timings.
+The **Display** page selects packaged modes for the configured S3 or ET4000 adapter. Changing the emulated adapter requires a Pi-DOS reboot before installing or selecting its Windows driver: exit Windows, select the adapter in PIDOSCFG, choose Accept and reboot. Applying a Windows display mode requires restarting Windows. Available resolutions depend on the packaged driver catalogue and display timings.
 
 The **Audio and MIDI** page installs supported existing Windows sound drivers. Select a driver matching the active Pi-DOS hardware. Creative SB2, SB Pro 2, SB16 and PC speaker installation run inside Windows; Gravis launches its original installer after closing Windows. AdLib uses Windows' own Drivers installation and may request Windows disks. Save work before any installer or restart.
 
 Creative installation includes the vendor MIDI Mapper setups and initially selects **SB MIDI Out**, **SBP2 All MIDI** or **SB16 All MIDI**, as appropriate. These route music to the configured Pi-DOS MIDI destination, normally SC-55. Use **Windows MIDI Mapper...** to choose a different setup, such as an FM synthesizer. Windows' common audio and MIDI components must already be installed; its Drivers dialog can request installation media.
 
-The **Pi-DOS settings** page saves the shared hardware and system configuration for the next Pi-DOS startup, including Turbo speed and its shortcut. It has no live hardware Apply button. Its Mixer settings save boot levels; use **Audio and MIDI > Volume...** for immediate Windows volume changes, described in Chapter 7. **Restart Windows...** restarts the guest environment, while a Pi-DOS reboot also applies changed emulated hardware.
+The **Pi-DOS settings** page saves the shared hardware and system configuration for the next Pi-DOS startup, including Turbo speed and its shortcut. Choose **Accept** to save and exit, or **Cancel** to discard edits and exit. Hardware changes require reboot. Its Mixer settings save boot levels; use **Audio and MIDI > Volume...** for immediate Windows volume changes, described in Chapter 7. **Restart Windows...** restarts the guest environment, while a Pi-DOS reboot also applies changed emulated hardware.
 
 To remove the configuration application, run Setup and choose **Uninstall**. Installed vendor drivers, saved settings, audio caches and backups remain available for a later reinstall. The new Windows installation, upgrade and playback paths still need confirmation in actual guest installations.
 
@@ -510,43 +510,35 @@ Setup has eight pages: CPU, Memory, Video, Sound, Mixer, Input, Network and Syst
 | Enter | Edit or activate the focused control |
 | Arrow keys | Navigate choices |
 | Home / End, PgUp / PgDn | Move within lists |
-| F2 or Alt+S | Save edited settings across all pages; stay in setup |
-| F4 | Apply hardware and shortcuts to this session |
-| F3 or Alt+R | Restore defaults on the current page, pending Save or Apply |
-| Esc / Exit | Exit without saving pending edits; restore unsaved mixer preview |
+| F2 or Alt+A (also Alt+S) | Accept: save all pages and exit |
+| F3 or Alt+R | Restore defaults on the current page, pending Accept |
+| Esc / Cancel | Discard edits and exit; restore unsaved mixer preview |
 
 Some lists support searching by typing. Mouse selection is optional. F3 changes the current page only and does not take effect on disk until you save.
 
 | What you changed | How to activate it |
 | --- | --- |
-| CPU, Turbo, emulated sound/MIDI, mixer or shortcuts | Apply; switching to or from a 286 restarts DOS |
-| DOS memory, XMS/EMS, video adapter or Voodoo | Apply and confirm a DOS-session restart |
-| VGA666, CRT/LCD monitor, LCD monitoring overlay, physical audio output, region, diagnostics, controllers or network | Save and reboot Pi-DOS |
+| CPU, memory, video, sound/MIDI, Turbo configuration, shortcuts and other settings | Accept and reboot Pi-DOS |
+| Mixer levels for active hardware | Preview live; Accept keeps levels, Cancel restores the starting preview |
+| Configured Turbo shortcut | Switch normal/Turbo speed immediately |
 
 #### To change a setting
 
 1. Run `PIDOSCFG` and move to the relevant page.
 2. Select the control and choose the new value.
 3. Review any related settings on other pages.
-4. Press **F2** to save settings for future boots, if wanted. Save stays in setup.
-5. Press **F4 / Apply** to activate CPU, sound, mixer and system-shortcut settings now.
+4. Choose **Accept (F2)** to save all edited pages and exit.
+5. Run `REBOOT` to activate configuration changes.
 
-Apply closes setup after success. RAM size, XMS/EMS, video-card, Voodoo and transitions to/from 286 ask
-before restarting the DOS session; the Raspberry Pi remains running. This
-starts DOS and its startup files again, so session-only mounts and unsaved
-program state are lost. Apply is available outside Windows and needs writable
-`C:\TEMP`. Save your work and exit Windows before running DOS setup.
+The main screen has two buttons. **Cancel (Esc)** discards edits and exits;
+it also restores unsaved mixer preview levels. **F3** still restores defaults
+on the current page as pending edits.
 
-Apply does not save `PIDOS.CFG`. Unsaved applied settings remain active across
-Apply-triggered DOS-session restarts, until whole-Pi reboot or poweroff.
-Reopening DOS setup restores these applied values and marks differences from
-the saved file as unsaved, so F2 can keep them. Exit discards pending edits;
-it does not undo an earlier Save or successful Apply.
-
-Other System settings (including physical audio output and CRT/LCD monitor
-settings), Input, Network and regional changes still require Save and `REBOOT`.
-The mixer continues to preview eligible levels immediately; Chapter 7 explains
-when Exit restores previewed levels.
+Hardware, Turbo target speed, shortcut assignments and other configuration
+changes take effect after reboot. Mixer levels continue to preview live when
+the selected sound hardware matches the running setup. Once configured at
+startup, the Turbo shortcut switches speed immediately, including while a
+program is running. Chapter 7 explains mixer preview and cancellation.
 
 ### Understanding PIDOS.CFG
 
@@ -619,7 +611,7 @@ The CPU and Memory pages describe the emulated PC, not the physical Raspberry Pi
 
 Before the first DOS session, a fresh image detects the Raspberry Pi and selects a CPU preset: **386DX 33 MHz on Pi 2/3 families**, **486DX2 66 MHz on Pi 4 families**, or **Pentium 120 MHz on Pi 5 families**. This also applies if you skip the welcome setup. Zero 2 and Compute Module 3 use the Pi 2/3 preset; Pi 400 and Compute Module 4/4S use Pi 4; Pi 500 and Compute Module 5 use Pi 5. Unknown models keep the packaged Pentium 120 fallback.
 
-The CPU page marks all three board defaults and adds **[recommended]** to the detected board's preset. **Restore defaults** selects that preset; Apply activates it, and Save keeps it for future boots. Updates and moving an existing card to another board preserve the saved CPU settings.
+The CPU page marks all three board defaults and adds **[recommended]** to the detected board's preset. **Restore defaults** selects that preset; Accept saves it, and reboot activates it. Updates and moving an existing card to another board preserve the saved CPU settings.
 
 These defaults reflect reported Pi-DOS hardware testing and remain starting points for each DOS workload. Lower the profile if a program has audio dropouts or slow response. The MHz labels indicate approximate performance classes. They do not guarantee the speed, timing or benchmark score of a particular original PC.
 
@@ -639,7 +631,7 @@ These defaults reflect reported Pi-DOS hardware testing and remain starting poin
 
 1. Open `PIDOSCFG` and select CPU.
 2. Choose a fixed profile appropriate to the program, such as 486DX2 66 MHz.
-3. Save if you want to keep the choice, then press Apply.
+3. Choose **Accept** to save and exit, then run `REBOOT`.
 4. Start the program again and compare its behavior.
 
 You can list profile choices from the command line with `PIDOSCFG /LIST`. For example, `PIDOSCFG /PROFILE 486-66` selects that saved profile; reboot afterward. Profile selection does not independently change memory or FPU settings.
@@ -648,7 +640,7 @@ Use one change at a time when diagnosing timing problems. A slow menu, fast anim
 
 ### CPU profile and Turbo
 
-The CPU profile sets normal speed. Below the profile list, **Turbo speed** offers
+The CPU profile sets normal speed. One blank line below the profile list, **Turbo speed** offers
 only higher MHz presets for that CPU family, plus **Disabled**. There is no
 separate Normal speed setting. These are the choices for each normal profile:
 
@@ -664,9 +656,9 @@ separate Normal speed setting. These are the choices for each normal profile:
 | Pentium 100 MHz | 120, 133, 150, 166, 200 |
 | Pentium 120 MHz | 133, 150, 166, 200 |
 
-Turbo is disabled by default. Choose a Turbo speed, press **F2** if you want to
-keep it for future boots, then **F4 / Apply**. Each new session starts with
-Turbo OFF, using the normal profile speed. Press **Ctrl+Alt+T** to switch
+Turbo is disabled by default. Choose a Turbo speed, press **F2 / Accept** to
+save and exit, then reboot Pi-DOS. Each boot starts with Turbo OFF, using the
+normal profile speed. Press **Ctrl+Alt+T** to switch
 between normal and Turbo speed while a program
 runs; System's **Turbo shortcut** changes that assignment. Toggling preserves
 the CPU model and execution core. A brief top-right notification reports, for
@@ -704,7 +696,7 @@ The Memory page offers 1, 2, 4, 8, 16, 32, 64 and 128 MiB. The default is **16 M
 
 1. Open the Memory page in PIDOSCFG.
 2. Choose a size supported by the selected CPU.
-3. Save if wanted, then Apply and confirm the DOS-session restart.
+3. Choose **Accept** to save and exit, then run `REBOOT`.
 4. Run the application and check its own requirements and messages.
 
 More memory is not always better. Some older programs fail with more than 16 MiB; others require a smaller configuration. Setup rejects sizes outside the selected CPU's address range.
@@ -719,11 +711,11 @@ leaves these switches unchanged.
 1. Open the Memory page in PIDOSCFG.
 2. Press Tab to focus **Enable XMS** or **Enable EMS**, then Space or Enter to
    toggle it. You can also click the checkbox.
-3. Press **F2** if you want to keep the choice for future boots.
-4. Press **F4 / Apply** and confirm the DOS-session restart.
+3. Press **F2 / Accept** to save and exit.
+4. Run `REBOOT` to activate the changes.
 
 Memory **Restore defaults** restores 16 MiB and enables both switches. In the
-Windows tool, open **Pi-DOS settings > Memory**, change the checkboxes and Save,
+Windows tool, open **Pi-DOS settings > Memory**, change the checkboxes and choose Accept,
 then exit Windows and reboot Pi-DOS. The running Windows session is unchanged.
 Existing advanced EMS modes stay intact until edited; turning EMS off and on
 again selects the standard enabled mode.
@@ -754,9 +746,8 @@ An application may require a particular adapter or mode. Select the adapter befo
 
 Software Voodoo emulation is enabled by default with maximum memory. It emulates 3dfx hardware in software; it does not mean the Pi contains a Voodoo card or that every accelerated game will be fast. Host Glide passthrough is disabled in the baseline.
 
-To activate a video-adapter or Voodoo change, Save if wanted, then Apply and
-confirm the DOS-session restart. CRT/LCD monitor settings are separate and
-still require Save and a whole-Pi reboot.
+To activate video-adapter, Voodoo or CRT/LCD monitor changes, choose **Accept**
+and reboot Pi-DOS.
 
 ### Using a CRT monitor
 
@@ -779,12 +770,12 @@ checking. Pi 5 has reduced colour precision with standard VGA666 wiring.
 1. In PIDOSCFG's System tab, check **Enable VGA666** (off by default).
 2. Choose CRT or LCD to suit your display. Select USB audio or a supported
    analogue output if needed; VGA666 has no audio.
-3. Press F2 to Save, exit setup and use a clean REBOOT or POWEROFF. The system
+3. Press F2 / Accept to save and exit, then use a clean REBOOT or POWEROFF. The system
    updates BOOT for the next startup. Use POWEROFF if the adapter is not yet
-   fitted. Apply does not activate this option.
+   fitted.
 4. With power off, fit the VGA666 board and connect the display, then start the Pi.
 
-To return to HDMI, uncheck the option, Save and cleanly restart. Windows exposes
+To return to HDMI, uncheck the option, Accept and cleanly restart. Windows exposes
 the same saved setting under System. VGA666 uses GPIO 2–21 and disables the
 header UART; avoid other devices on those pins. CRT/LCD controls and Turbo
 notifications work through the selected output as usual.
@@ -804,7 +795,7 @@ LCD holds a selected host resolution while DOS changes video modes. Available ch
 2. Choose a resolution your display accepts.
 3. Select **4:3** or **Original pixels** for the image shape.
 4. Leave linear filtering off for sharper pixel edges, or enable it for a smoother scaled image.
-5. Save and reboot.
+5. Accept and reboot.
 
 LCD mode fits the image with centered borders and reduces oversized guest modes to fit. Original pixels preserves the rendered raster ratio: for example, 320x200 is 8:5. A 4:3 choice deliberately changes that displayed proportion.
 
@@ -813,7 +804,7 @@ There is no automatic native-panel detection, integer-scale control or user refr
 ### Showing CPU load and temperature
 
 With LCD selected, enable **CPU and temperature overlay** on the System page,
-then Save and reboot. It shows Linux CPU usage per core and the available
+then Accept and reboot. It shows Linux CPU usage per core and the available
 CPU/SoC temperature; `--` means a reading is unavailable. It is off by default,
 works independently of diagnostic logging and is omitted from DOS screenshots.
 
@@ -853,7 +844,7 @@ Other presets include None, Tandy, AdLib, Creative Game Blaster/CMS, Sound Blast
 #### To match a game's digital sound setup
 
 1. In PIDOSCFG, choose the sound device and resources you want.
-2. Save if wanted, then Apply to activate the sound hardware.
+2. Choose **Accept** and reboot to activate the sound hardware.
 3. Run the game's sound setup.
 4. Select the same device, address, IRQ and DMA values.
 5. Run the game's sound test if provided, then save its settings.
@@ -864,7 +855,7 @@ GUS software may need user-supplied compatible patch files under the configured 
 
 ### Choosing the physical output
 
-The System page selects HDMI, 3.5 mm jack or external USB DAC. Save and reboot after changing it.
+The System page selects HDMI, 3.5 mm jack or external USB DAC. Accept and reboot after changing it.
 
 | Output | What to check |
 | --- | --- |
@@ -900,7 +891,7 @@ Choose matching music hardware in the game's own setup. Sound Blaster digital ef
 1. Connect the USB MIDI interface and turn on the module before boot.
 2. In PIDOSCFG, choose External USB MIDI and select the destination.
 3. Use **F5** in the destination picker if you need to rescan.
-4. Save and reboot.
+4. Accept and reboot.
 5. In the game, select the music hardware expected by your module.
 
 Pi-DOS saves the destination by stable identity. For devices without a unique serial number, keep the interface on the same USB port. A missing or ambiguous destination is not replaced by another module.
@@ -916,10 +907,10 @@ The Mixer page provides master and device-specific levels, including independent
 1. Start with the intended sound hardware already active.
 2. Open PIDOSCFG and select Mixer.
 3. Adjust an enabled channel marked **LIVE**.
-4. Press **F2** to keep the preview and save it, or choose Exit to restore the unsaved preview levels.
+4. Choose **Accept (F2)** to save the levels and exit, or **Cancel (Esc)** to restore the starting preview levels and discard edits.
 
 Pending hardware changes suspend live preview and restore original levels.
-Apply activates the selected hardware and reapplies its mixer levels. When live
+Accept saves hardware and mixer changes for the next boot. When live
 preview is unavailable, the page shows **AFTER REBOOT**; you can still save
 levels for the next boot. Temporary queries need writable C: storage.
 
@@ -1124,7 +1115,7 @@ Known controllers use SDL mappings in Automatic layout. Unknown devices can fall
 1. Connect the controller and open PIDOSCFG's Input page.
 2. Choose the DOS joystick type and layout appropriate to the game.
 3. Adjust the dead zone or button swap if needed.
-4. Save and reboot.
+4. Accept and reboot.
 5. Start the game and use its joystick calibration routine.
 
 Controllers can connect and reconnect after boot. Active devices keep their slots; a new device fills the first vacancy. Disconnection releases buttons and centers axes. A game that probes only at startup may need restarting after a reconnect.
@@ -1149,7 +1140,7 @@ F12 remains the runtime Host key. The listed Pi-DOS shortcuts can be reassigned 
 
 1. Open the System page and find the desired action; scroll if needed.
 2. Choose an unused key combination or None.
-3. Save if you want to keep the assignment, then Apply to activate it now.
+3. Choose **Accept** to save and exit, then reboot Pi-DOS to activate it.
 4. Check the assignment before using it in an application.
 
 A disabled shortcut returns to normal DOS input. Assigned combinations suppress repeated key events. Shift/GUI variants remain available to the guest.
@@ -1176,7 +1167,7 @@ Your keyboard, DOS country and timezone are independent settings. Networking als
 2. Select the keyboard layout matching your keyboard.
 3. Select the DOS country and, when appropriate, code-page choice.
 4. Select a timezone from the installed catalog.
-5. Save and reboot.
+5. Accept and reboot.
 
 The baseline defaults are keyboard `sp`, country `34` and timezone `Europe/Madrid`. Searchable lists help locate other choices. Timezone rules provide daylight-saving changes; receiving network time does not choose your timezone for you.
 
@@ -1213,7 +1204,7 @@ SLIRP provides NAT-style guest connectivity through an emulated NE2000 adapter. 
 2. Choose SLIRP and the intended DOS TCP/IP startup mode.
 3. Keep adapter resources consistent with the packet driver; the defaults are I/O 300h and IRQ 10.
 4. Choose DHCP or appropriate static guest settings.
-5. Save and reboot, then run `NETINFO` to inspect settings and status.
+5. Accept and reboot, then run `NETINFO` to inspect settings and status.
 
 If startup did not complete, use `NETUP` to retry. Retry is bounded so an absent lease or cable does not block DOS indefinitely.
 
@@ -1243,7 +1234,7 @@ IPX tunnel mode connects compatible emulator endpoints over UDP. One system acts
 1. Enable IPX in the Network page.
 2. Choose server mode on one system and client mode on the others.
 3. Set the server address and matching port as required.
-4. Save, reboot and check the connection using NETINFO and the installed networking guide.
+4. Accept, reboot and check the connection using NETINFO and the installed networking guide.
 5. Start the games with compatible multiplayer settings.
 
 NETUP retries saved startup. IPXNET provides manual control and PING facilities. Firewalls must allow the chosen UDP traffic. A tunnel does not put native IPX frames onto a real retro-PC LAN.
@@ -1296,7 +1287,7 @@ Doom and Quake benchmark sound is disabled. Quake needs an FPU, and high-resolut
 
 1. Record the Pi model, Pi-DOS version, CPU profile, RAM, video adapter and monitor settings.
 2. Run the same benchmark option and record the result.
-3. Change one setting. Save if wanted, then Apply for CPU, memory, video or sound; reboot for settings that require it.
+3. Change one setting, choose **Accept** and reboot Pi-DOS. Mixer levels can be previewed live; configured Turbo switching is immediate.
 4. Repeat the same option under otherwise comparable conditions.
 
 A score measures the configured emulated environment. A CPU profile label does not guarantee an original PC's score. Cooling, throttling and the Pi's ability to sustain the requested emulation speed can affect results.
@@ -1742,9 +1733,9 @@ Preserve the original notices included with tools and data. Consult the reposito
 
 ### Editorial basis
 
-The first edition was prepared from `technical-reference.md`, reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline `ff0c194`. This third edition updates user procedures against the Pi-DOS 1.1 source tree as of 6 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.
+The first edition was prepared from `technical-reference.md`, reviewed 30 October 2026, covering Pi-DOS 1.0 at baseline `ff0c194`. This third edition updates user procedures against the Pi-DOS 1.1 source tree as of 7 November 2026, including the setup and Windows application documentation. It does not claim that new hardware tests were performed during writing.
 
-The review includes unreleased Apply, Turbo, XMS/EMS, VGA666 and storage-recovery changes.
+The review includes unreleased setup, Turbo, XMS/EMS, VGA666 and storage-recovery changes.
 Their inclusion here does not mean they shipped in the published 1.1 image.
 
 The supplied 1993 Microsoft MS-DOS 6 Concise User's Guide was used as a reference for organization, typography and procedure layout. This guide is independently written for Pi-DOS and does not imply Microsoft endorsement or that Microsoft DOS is included.
@@ -1760,7 +1751,7 @@ Implemented support, host checks and physical confirmation are different kinds o
 | Board boot and input | User-confirmed Pi 3 and Pi 5, and Pi 4 after matching firmware correction; other targets need checks |
 | Reboot and persistence | Appliance REBOOT, persisted test file and POWEROFF confirmed; power-loss recovery not established |
 | PC execution | Native/Pi 5 COM, EXE, BAT and dynamic-recompiler checks; not a complete application suite |
-| Apply / Turbo | ARM64/QEMU checks cover live changes, setup controls, Turbo toggling and CRT/LCD pixel restoration; real supervisor restarts and physical displays still need acceptance |
+| Setup / Turbo | ARM64/QEMU checks cover Accept/Cancel, reboot-only hardware edits, live mixer, Turbo toggling and CRT/LCD pixel restoration; physical displays and audio still need acceptance |
 | Display | Pi 5 GPU/KMS checks and user CRT appearance report; each timing/display and latest static welcome need checks |
 | VGA666 | All 18 board overlay chains, BOOT updates and DRM-selection fixtures checked; physical output and Pi 5 colour/GBM/EGL need acceptance |
 | Keyboard/mouse | Virtual keyboard-path checks and user hotplug record; every application not certified |

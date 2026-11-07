@@ -122,7 +122,7 @@ All targeted models use this same partition layout and data volume.
 ### Custom DAC EDID
 
 GPIO VGA666 output has a separate analog EDID and managed BOOT include. Enable
-it in PIDOSCFG's System tab, Save and cleanly reboot. The existing per-model
+it in PIDOSCFG's System tab, Accept and cleanly reboot. The existing per-model
 KMS overlays are retained, including Pi 5's RP1 DPI path. See the
 [VGA666 setup and recovery guide](vga666.md) for required assets and validation.
 
@@ -189,7 +189,7 @@ profile to `/run/pidos-video.conf`, loaded after user settings. Internal
 configure the SDL2 patch.
 Explicit CRT restores the baseline below and ignores retained LCD preferences.
 Existing files without `monitor` preserve their advanced settings unchanged.
-Save and reboot to apply; boot can initially show the kernel's 720x400 mode
+Accept and reboot to apply; boot can initially show the kernel's 720x400 mode
 before LCD switches once to its fixed output. The new LCD rendering path still
 needs physical display testing, including aspect fitting and mode changes.
 
@@ -1303,7 +1303,7 @@ in those boards' firmware sections. USB selects a playback-capable USB audio
 card by alphabetical ALSA ID, then lowest playback device number; connect the
 DAC before boot. Discovery waits up to five seconds for driver registration.
 Unavailable outputs stay silent for that boot without falling back to a
-different output. Changes apply after Save and REBOOT. Jack/USB listening
+different output. Changes apply after Accept and REBOOT. Jack/USB listening
 checks on physical hardware remain pending. On dual-HDMI boards, use HDMI0 (HDMI-A-1, the
 micro-HDMI connector nearest USB-C power) for the HDMI-to-VGA/audio adapter.
 It requests native KMS/DRM, GLES and ALSA, attempts a
@@ -1389,7 +1389,7 @@ to Ctrl+Alt+Print Screen and save numbered PNGs in `C:\SYSTEM\CAPTURES`, requiri
 writable persistent storage. Ctrl+Alt+F4 cycles multi-image CD sets loaded with
 `IMGMOUNT`; Ctrl+Alt+F5 cycles floppy image sets. Single images and physical USB
 media are excluded. The Input tab selects global DOS joystick hardware,
-controller layout, directional controls and dead zone. Save and reboot to apply.
+controller layout, directional controls and dead zone. Accept and reboot to apply.
 Controller hotplug uses stable slots and clears input on disconnect; host virtual
 controller checks pass, with physical game/controller validation still pending.
 See [Input and controllers](../src/doscfg/README.md#input-and-controllers).

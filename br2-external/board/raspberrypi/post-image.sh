@@ -114,7 +114,7 @@ printf '%s\r\n' \
     'Save and reboot applies settings, then offers keyboard and clock review.' \
     'Skip keeps saved defaults. PIDOSCFG /FIRSTBOOT reopens welcome later.' \
     'Manual DOS date/time changes last this session; DATE /S resumes host time.' \
-    'Save and REBOOT to apply hardware changes. Matching mixer channels apply live.' \
+    'Accept saves and exits; REBOOT activates hardware changes. Mixer stays live.' \
     'Setup preserves other settings and saves the previous file as PIDOS.BAK.' \
     'Run VIDEOMOD /P to list host display and DOS BIOS/VESA video modes.' \
     'Use VIDEOMOD /HOST or /DOS to filter the list; /? displays help.' \

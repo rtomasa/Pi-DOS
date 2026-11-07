@@ -28,11 +28,11 @@ PI-DOS SETTINGS
 ---------------
 The settings page offers CPU, Memory, Video, Sound, Mixer, Input, Network
 and System categories. Select a setting and choose Edit or double-click it.
-Save writes C:\SYSTEM\PIDOS.CFG using the same presets, validation and
+Accept saves and exits, writing C:\SYSTEM\PIDOS.CFG using the same presets, validation and
 preservation rules as DOS PIDOSCFG. The prior configuration is kept in
-C:\SYSTEM\PIDOS.BAK. Close without saving discards pending changes.
+C:\SYSTEM\PIDOS.BAK. Cancel discards pending changes and exits.
 Exit Windows and reboot Pi-DOS to apply saved settings.
-System also offers Enable VGA666 (default off). Save and cleanly reboot
+System also offers Enable VGA666 (default off). Accept and cleanly reboot
 Pi-DOS to update BOOT and switch between HDMI and GPIO VGA output.
 Memory includes independent Enable XMS and Enable EMS checkboxes. Both default
 to enabled. These settings are saved for the next Pi-DOS boot; the running
@@ -92,7 +92,7 @@ omitted because no confirmed compatible Windows 3.x driver package was located.
 Change emulated sound hardware through Pi-DOS settings in the main window.
 No replacement sound driver is generated.
 
-1. Select the emulated card in Pi-DOS sound settings. Save, exit Windows
+1. Select the emulated card in Pi-DOS sound settings. Accept, exit Windows
    and reboot Pi-DOS before installing its Windows driver.
 2. Open Audio and MIDI, select the matching Windows driver and click
    Install selected driver. The Creative and Gravis installers check the

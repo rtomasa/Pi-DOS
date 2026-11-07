@@ -412,13 +412,12 @@ USB CD audio controls, limited to 0-100% like the other sources. The USB CD
 channel is registered when the drive interface is installed, so its level and
 mute can be set before playback. The live mixer check covers both CD channels.
 
-`0047-session-apply-and-turbo.patch` registers the supervised PIAPPLY command,
-shares C89 settings validation and the CPU-family speed tables with both UIs,
-and adds speed-only Turbo notifications to CRT and LCD surface presentation.
-The host-only notification saves/restores its rectangle and expires on static
-screens too. CPU properties commit together; sound-device recreation restores
-mixer levels and updates the DOS shell environment. RAM/video/Voodoo changes
-request a DOS-session restart handled by PID 1, without a Linux reboot.
+`0047-session-apply-and-turbo.patch` shares the CPU-family speed tables with
+both UIs and adds speed-only Turbo notifications to CRT and LCD surface
+presentation. Saved Turbo/shortcut settings are loaded at startup. Toggling
+changes only the cycle budget. The host-only notification saves/restores its
+rectangle and expires on static screens too. Configuration edits require a
+Pi-DOS reboot; the former PIAPPLY command and DOS-only restart path are removed.
 `tools/phase0/install-session.py` installs shared sources for both native and
 Buildroot builds. Focused ARM64/QEMU coverage lives in
 `tools/image/test-session-turbo.py`; real Pi CRT/LCD/audio acceptance is separate.

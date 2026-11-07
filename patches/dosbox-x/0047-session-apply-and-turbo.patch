@@ -1,4 +1,4 @@
-Pi-DOS: session Apply, speed-only Turbo and CRT/LCD notifications.
+Pi-DOS: speed-only Turbo and CRT/LCD notifications.
 
 --- a/src/misc/programs.cpp
 +++ b/src/misc/programs.cpp
@@ -24,28 +24,6 @@ Pi-DOS: session Apply, speed-only Turbo and CRT/LCD notifications.
  	LOG(LOG_MISC,LOG_DEBUG)("PROGRAMS_Init(): initializing Z: drive .COM stub and program management");
  
  	/* Setup a special callback to start virtual programs */
---- a/src/dos/dos_programs.cpp
-+++ b/src/dos/dos_programs.cpp
-@@ -8108,6 +8108,9 @@
- void PC98UTIL_ProgramStart(Program * * make);
- void VESAMOED_ProgramStart(Program * * make);
- void PidosVideoModes_ProgramStart(Program **make);
-+#if defined(LINUX) && defined(C_SDL2)
-+void PiDosApply_ProgramStart(Program **make);
-+#endif
- void VFRCRATE_ProgramStart(Program * * make);
- 
- #if defined C_DEBUG
-@@ -10165,6 +10168,9 @@
- #if !defined(OSFREE)
- 	PROGRAMS_MakeFile("HELP.COM",HELP_ProgramStart,"/SYSTEM/");
- 	PROGRAMS_MakeFile("VIDEOMOD.COM",PidosVideoModes_ProgramStart,"/SYSTEM/");
-+#if defined(LINUX) && defined(C_SDL2)
-+	PROGRAMS_MakeFile("PIAPPLY.COM",PiDosApply_ProgramStart,"/SYSTEM/");
-+#endif
- #endif
- 	PROGRAMS_MakeFile("IMGMOUNT.COM", IMGMOUNT_ProgramStart,"/SYSTEM/");
- #if !defined(OSFREE)
 --- a/src/output/output_surface.cpp
 +++ b/src/output/output_surface.cpp
 @@ -12,6 +12,7 @@

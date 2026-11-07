@@ -19,26 +19,27 @@ Other display modes still switch to the setup's 80x25 text mode when required.
 Setup and welcome titles include the project version from the root `VERSION`
 file, embedded when rebuilding the executable.
 
-Eight pages configure CPU, Memory, Video, Sound, Mixer, Input, Network and System settings. F5/F6
-change pages; Tab/Shift+Tab move focus; Enter edits; F2 saves all pages and stays in setup; F4 applies; Esc
-exits without saving pending edits. Selection dialogs support typing to filter, arrows and page keys.
-**Restore defaults** (F3 or Alt+R) resets the current page only, pending Save.
+Eight pages configure CPU, Memory, Video, Sound, Mixer, Input, Network and System settings.
+F5/F6 change pages; Tab/Shift+Tab move focus; Enter edits. The two main buttons
+are **Accept** (F2 or Alt+A: save all pages and exit) and **Cancel** (Esc:
+discard edits and exit, restoring unsaved mixer preview). Alt+S also accepts.
+Selection dialogs support typing to filter, arrows and page keys.
+**Restore defaults** (F3 or Alt+R) resets the current page only, pending Accept.
 CPU defaults are 386DX 33 MHz for Pi 2/3 families, 486DX2 66 MHz for Pi 4
-families, and Pentium 120 MHz for Pi 5 families. The profile list marks all three board defaults and
-adds `[recommended]` to the current board's profile. Restore defaults selects
-that recommendation, pending Save and reboot.
+families, and Pentium 120 MHz for Pi 5 families. The profile list marks all three
+board defaults and adds `[recommended]` to the current board's profile.
 Existing installations retain their configuration until explicitly changed.
 
-## Apply and speed-only Turbo
+## Saving settings and speed-only Turbo
 
-F4 / Apply activates CPU, sound, mixer and system-shortcut settings for the
-session; F2 saves all pages and stays in setup. RAM, XMS/EMS, video-card, Voodoo and transitions to/from 286
-require confirmation before the supervisor starts a new DOS session,
-without rebooting Linux. Session settings live under `/run` and do not overwrite
-`PIDOS.CFG`. Reopening setup imports applied settings; Exit does not undo a
-successful Apply. Writable `C:\TEMP` is required for the bounded request/result
-handoff to internal `Z:\SYSTEM\PIAPPLY.COM`. Apply is rejected inside Windows.
+Accept saves `PIDOS.CFG` and closes setup. Reboot Pi-DOS to activate CPU,
+memory, video, sound/MIDI, Turbo configuration, shortcuts and other system
+settings. There is no hardware Apply button or DOS-session restart path.
+Mixer preview remains live when the selected sound hardware matches the
+running setup; Accept keeps it and Cancel restores its starting levels.
+Once configured at startup, the Turbo shortcut switches speed immediately.
 
+The CPU page leaves one blank line between the profile list and Turbo speed.
 The CPU page retains its nine profiles, which set normal speed, and adds a
 Turbo MHz list containing only higher speeds for the selected CPU family.
 `src/common/cpu_profiles.c` supplies the shared family/speed/cycle table. Existing
@@ -49,8 +50,7 @@ has no fixed-MHz Turbo. `[pidos] shortcut_turbo=Ctrl+Alt+T` is configurable and
 participates in shortcut conflict validation.
 
 The runtime changes only `[cpu] cycles` when toggling. It captures/restores the
-Normal budget and resets the toggle pair after a full Apply or external CPU
-configuration change. A two-second host notification is composited and restored
+normal budget. External CPU configuration changes invalidate the toggle pair. A two-second host notification is composited and restored
 on CRT and LCD surfaces, separately from the optional LCD CPU/temperature HUD.
 The Windows frontend shares speed fields and validation but keeps save-only
 hardware behavior and its existing live mixer.
@@ -58,8 +58,8 @@ hardware behavior and its existing live mixer.
 ## Monitor output
 
 **System > Enable VGA666** selects a GPIO VGA666 adapter, disabled by default.
-Save and cleanly reboot or power off: PID 1 updates a managed BOOT include for
-the next startup. Apply leaves this setting pending. The model-specific KMS
+Accept and cleanly reboot or power off: PID 1 updates a managed BOOT include for
+the next startup. The model-specific KMS
 overlays remain selected automatically, including RP1 DPI on Pi 5. CRT/LCD
 selects presentation separately. VGA carries no audio; select a suitable audio
 output. See [VGA666 setup, wiring and recovery](../../docs/vga666.md).
@@ -91,7 +91,7 @@ CRT retains native DOS raster/refresh switching, with no aspect correction or
 software scaler. Existing configurations without `[pidos] monitor` keep their
 previous advanced display settings until a monitor type is explicitly selected.
 Selecting a profile makes it authoritative over low-level `[sdl]` and `[render]`
-display settings. Save and reboot to apply. Physical LCD/CRT validation remains
+display settings. Accept and reboot to apply. Physical LCD/CRT validation remains
 necessary for the new profile path.
 
 ```ini
@@ -105,7 +105,7 @@ lcd_linear=false
 ## Memory, video, sound and system
 
 System's **Audio output** selects **HDMI (default)**, **3.5 mm jack (Pi 3/4)**,
-or **External USB DAC**. Save and reboot to apply. The setting is stored as
+or **External USB DAC**. Accept and reboot to apply. The setting is stored as
 `[pidos] audio_output=hdmi|jack|usb` in `C:\SYSTEM\PIDOS.CFG` and controls all
 emulated sound, including internal MIDI and CD audio. HDMI uses the primary
 port (HDMI0 on Pi 4/5). The image enables the Pi 3/4 analogue driver and firmware
@@ -127,8 +127,8 @@ Below the RAM list, **Enable XMS** and **Enable EMS** independently control the
 built-in extended/expanded memory interfaces. Both default to enabled and are
 stored as `[dos] xms=true/false` and `ems=true/false`. Tab focuses each checkbox;
 Space, Enter or a mouse click toggles it. Selecting RAM leaves both switches
-unchanged; Memory Restore defaults enables both and restores 16 MiB. Apply
-requires a confirmed DOS-session restart when either changes. Windows exposes
+unchanged; Memory Restore defaults enables both and restores 16 MiB. Accept
+saves these changes for activation after reboot. Windows exposes
 native checkboxes in its Memory category and saves them for the next Pi-DOS boot.
 Existing advanced `ems=emsboard`/`emm386` modes display as enabled and remain
 unchanged until explicitly edited; re-enabling a checkbox selects `ems=true`.
@@ -203,8 +203,8 @@ with 100 as normal maximum. Arrow keys adjust by 5%, or
 choose a preset/custom stereo value. On first entering Mixer, the utility reads
 the running hardware via `CONFIG -ALL -GET` and levels via `MIXER`. When selected
 hardware matches, enabled channels update immediately through
-`Z:\SYSTEM\MIXER.COM /NOSHOW`. The page shows LIVE or AFTER REBOOT. Exit restores
-the starting levels (at MIXER's whole-percent precision); Save keeps the preview.
+`Z:\SYSTEM\MIXER.COM /NOSHOW`. The page shows LIVE or AFTER REBOOT. Cancel restores
+the starting levels (at MIXER's whole-percent precision); Accept keeps the preview and exits.
 Pending hardware changes suspend preview and restore the original live levels.
 Unavailable live control falls back to saving for reboot. A writable `C:\TEMP`
 or `C:\` is needed for an exclusively created, automatically removed query file.
@@ -257,7 +257,7 @@ on PIDOSCFG's System page, with standard `DATE` and `TIME` commands for the cloc
 ## Input and controllers
 
 The Input page configures global DOS joystick hardware and controller options.
-Save and reboot to apply. No controller mapper file or per-game profile is needed.
+Accept and reboot to apply. No controller mapper file or per-game profile is needed.
 
 - **DOS joystick type:** defaults to two conventional two-axis/two-button
   joysticks. Four-axis, second-controller four-axis, Thrustmaster FCS and CH
@@ -301,7 +301,7 @@ Tab to reach fields below the visible System rows; the More indicators also
 scroll with the mouse. Duplicate assignments are rejected before saving;
 hand-edited duplicates are disabled at boot in the table's order.
 Invalid hand-edited shortcuts fall back to their defaults and log a diagnostic.
-Apply activates shortcut changes immediately; Save keeps them for future boots.
+Accept saves shortcut changes; reboot Pi-DOS to activate them.
 
 Reboot and poweroff use PID 1's existing synchronized shutdown. Pause runs on
 key release; repeat the shortcut or press Escape to resume. Disabling a shortcut
@@ -356,7 +356,7 @@ installation directory, and run `WFWNET` before `WIN`. Windows media,
 Microsoft TCP/IP-32 and native ODI/IPX drivers are user-supplied. WfW sharing
 also requires compatible protocols/authentication at the other endpoint.
 
-Save and reboot. `NETUP` retries DOS startup; `NETINFO` reports saved adapter
+Accept and reboot. `NETUP` retries DOS startup; `NETINFO` reports saved adapter
 settings and IPX status. Full setup and limitations are in
 [the networking manual](../../docs/networking.txt), installed as
 `C:\DOCS\NETWORK.TXT` and `Z:\NETWORK\NETWORK.TXT`.
@@ -411,7 +411,7 @@ and closed before renaming the previous configuration to `PIDOS.BAK` and moving
 the new file into place. A failed replacement attempts to restore the original.
 Existing temporary recovery files are never overwritten. Read errors, DOS
 read-only attributes, size limits (24 KiB), invalid input and write/rename errors
-are reported. Apply activates supported hardware and shortcuts; regional settings
+are reported. Accept saves supported hardware and shortcuts; these and regional settings
 remain reboot-only. Mixer changes can also be previewed immediately as described above. `REBOOT` or Ctrl+Alt+Delete performs
 a full Pi reboot and reloads the saved configuration. Save application data first.
 

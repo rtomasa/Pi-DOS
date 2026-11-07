@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Focused ARM64 Apply/Turbo integration under QEMU and dummy SDL.
+"""Focused ARM64 Accept/Cancel, live mixer and Turbo integration under QEMU and dummy SDL.
 
 Interposition maps appliance scratch paths into an isolated test directory;
 no real supervisor, devices, mounts or signals are used.
@@ -87,27 +87,23 @@ int SDL_PollEvent(SDL_Event *event) {
     static int (*real_poll)(SDL_Event *);static int toggle=0,phase=0,ui=0;
     if(!real_poll) real_poll=dlsym(RTLD_NEXT,"SDL_PollEvent");
     int result=real_poll(event);if(result || !event) return result;
-    if(ui<14 && exists("UIMEM")) {
-        static const SDL_Scancode scans[]={SDL_SCANCODE_F6,SDL_SCANCODE_TAB,SDL_SCANCODE_SPACE,
-            SDL_SCANCODE_TAB,SDL_SCANCODE_SPACE,SDL_SCANCODE_F4,SDL_SCANCODE_Y};
-        static const SDL_Keycode symbols[]={SDLK_F6,SDLK_TAB,SDLK_SPACE,SDLK_TAB,SDLK_SPACE,SDLK_F4,SDLK_y};
-        SDL_zero(*event);event->type=(ui%2)?SDL_KEYUP:SDL_KEYDOWN;event->key.type=event->type;
-        event->key.keysym.scancode=scans[ui/2];event->key.keysym.sym=symbols[ui/2];
-        ui++;return 1;
+    if(exists("UIRUN")) {
+        static SDL_Scancode keys[32];static int count=-1;
+        if(count<0) {
+            char path[4096],name[40];snprintf(path,sizeof(path),"%s/UIKEYS",root());
+            FILE *file=fopen(path,"r");count=0;
+            while(file && count<32 && fscanf(file,"%39s",name)==1) keys[count++]=SDL_GetScancodeFromName(name);
+            if(file) fclose(file);
+        }
+        if(ui<count*2) {
+            SDL_zero(*event);event->type=(ui%2)?SDL_KEYUP:SDL_KEYDOWN;event->key.type=event->type;
+            event->key.keysym.scancode=keys[ui/2];
+            event->key.keysym.sym=SDL_GetKeyFromScancode(keys[ui/2]);
+            ui++;return 1;
+        }
     }
-    if(ui<4 && exists("UIEXIT")) {
-        SDL_zero(*event);event->type=(ui%2)?SDL_KEYUP:SDL_KEYDOWN;
-        event->key.type=event->type;
-        event->key.keysym.scancode=ui<2?SDL_SCANCODE_DOWN:SDL_SCANCODE_ESCAPE;
-        event->key.keysym.sym=ui<2?SDLK_DOWN:SDLK_ESCAPE;
-        ui++;return 1;
-    }
-    if(ui<2 && exists("UIRUN")) {
-        SDL_zero(*event);event->type=ui++?SDL_KEYUP:SDL_KEYDOWN;
-        event->key.type=event->type;event->key.keysym.scancode=SDL_SCANCODE_F4;event->key.keysym.sym=SDLK_F4;
-        return 1;
-    }
-    if(!phase && !((toggle==0 && exists("TURBO1")) || (toggle==1 && exists("TURBO2")))) return 0;
+    static const char *stages[]={"BOOTON","BOOTOFF","TURBO1","TURBO2"};
+    if(!phase && (toggle>=4 || !exists(stages[toggle]))) return 0;
     SDL_zero(*event);
     if(phase<3) {
         event->type=phase==2?SDL_KEYUP:SDL_KEYDOWN;
@@ -129,23 +125,39 @@ subprocess.run([str(cc), '-shared', '-fPIC', '-O2',
                 '-I'+str(headers), str(source), '-ldl', '-o', str(preload)], check=True)
 
 
-def run(name, request, batch, ui=False):
+BASE = ('[cpu]\ncputype=486\ncore=dynamic_rec\ncycles=fixed 23880\n'
+        '[midi]\nmpu401=none\nmididevice=none\n[pidos]\nmidi_profile=none\nturbo_mhz=100\n'
+        '[sblaster]\nsbtype=sbpro2\noplmode=opl3\n')
+
+
+def run(name, keys=(), batch=(), accepts=False):
     case = work/name
     for directory in (case/'run', case/'TEMP', case/'SYSTEM'):
         directory.mkdir(parents=True, exist_ok=True)
-    (case/'TEMP/PIDAPPLY.CFG').write_text(request)
-    saved = '# saved settings must survive Apply\n[pidos]\nturbo_mhz=0\n' + (request if ui else '')
+    saved = '# setup edits require reboot\n' + BASE
     (case/'SYSTEM/PIDOS.CFG').write_text(saved)
-    if ui:
+    # Mount the fixture C: before enabling appliance drive protection.
+    # The initial on/off pair loads the boot Turbo settings before UI edits.
+    if keys:
         shutil.copyfile(ROOT/'br2-external/board/raspberrypi/dos/PIDOSCFG.EXE', case/'PIDOSCFG.EXE')
-    (case/'RUN.BAT').write_bytes(('\r\n'.join(['@echo off', 'echo 1>ENABLE', *batch])+'\r\n').encode())
+        (case/'UIKEYS').write_text(' '.join(keys))
+    lines = ['@echo off', 'ECHO 1>ENABLE', 'ECHO 1>BOOTON', 'PAUSE',
+             'ECHO 1>BOOTOFF', 'PAUSE', 'Z:\\SYSTEM\\MIXER.COM /NOSHOW MASTER 100']
+    if keys:
+        lines += ['ECHO 1>UIRUN', 'PIDOSCFG.EXE']
+    lines += ['Z:\\SYSTEM\\CONFIG.COM -GET cpu cycles >CPU.OUT',
+              'Z:\\SYSTEM\\CONFIG.COM -GET dos xms >XMS.OUT',
+              'Z:\\SYSTEM\\CONFIG.COM -GET dos ems >EMS.OUT',
+              'Z:\\SYSTEM\\MIXER.COM >LEVELS.OUT',
+              'IF EXIST Z:\\SYSTEM\\PIAPPLY.COM ECHO unexpected >APPLY.OUT', *batch, 'EXIT']
+    (case/'RUN.BAT').write_bytes(('\r\n'.join(lines)+'\r\n').encode())
     command = [str(qemu), '-L', str(target), '-E', 'LD_LIBRARY_PATH='+str(args.sdl_library_path.resolve()),
                '-E', 'LD_PRELOAD='+str(preload.resolve()), '-E', 'PIDOS_TEST_ROOT='+str(case.resolve()),
                str(tree/'src/dosbox-x'), '-conf', str(ROOT/'configs/pi-dos.conf'),
+               '-conf', str(case/'SYSTEM/PIDOS.CFG'),
                '-defaultmapper', '-nopromptfolder', '-defaultdir', str(case),
                '-fastlaunch', '-nomenu', '-nogui', '-time-limit', '15']
-    for setting in ('sdl fullscreen=false', 'sdl videodriver=dummy', 'sdl waitonerror=false',
-                    'midi mpu401=none', 'midi mididevice=none'):
+    for setting in ('sdl fullscreen=false', 'sdl videodriver=dummy', 'sdl waitonerror=false'):
         command += ['-set', setting]
     for line in ('mount c '+str(case), 'c:', 'RUN.BAT'):
         command += ['-c', line]
@@ -154,76 +166,41 @@ def run(name, request, batch, ui=False):
     with (case/'run.log').open('w') as log:
         completed = subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=70)
     assert completed.returncode==0, case/'run.log'
-    assert (case/'SYSTEM/PIDOS.CFG').read_text() == saved
+    if not accepts:
+        assert (case/'SYSTEM/PIDOS.CFG').read_text() == saved, case/'SYSTEM/PIDOS.CFG'
+        assert not (case/'SYSTEM/PIDOS.BAK').exists()
+    else:
+        assert (case/'SYSTEM/PIDOS.BAK').read_text() == saved
+    assert b'23880' in (case/'CPU.OUT').read_bytes(), case/'run.log'
+    assert b'true' in (case/'XMS.OUT').read_bytes() and b'true' in (case/'EMS.OUT').read_bytes()
+    assert not (case/'run/pi-dos-session-restart').exists()
+    assert not (case/'run/pidos-session.cfg').exists()
+    assert b'unexpected' not in (case/'APPLY.OUT').read_bytes()
     return case
 
 
-request = ('[cpu]\ncputype=486\ncore=dynamic_rec\ncycles=fixed 23880\n'
-           '[midi]\nmpu401=none\nmididevice=none\n[pidos]\nmidi_profile=none\nturbo_mhz=100\n'
-           '[sblaster]\nsbtype=sb16\nirq=5\n')
-case = run('live', request, [
-    'Z:\\SYSTEM\\PIAPPLY.COM /CHECK', 'TYPE C:\\TEMP\\PIDAPPLY.STA >CHECK.OUT',
-    'Z:\\SYSTEM\\PIAPPLY.COM', 'TYPE C:\\TEMP\\PIDAPPLY.STA >APPLY.OUT',
-    'Z:\\SYSTEM\\CONFIG.COM -GET cpu cputype >MODEL.OUT',
-    'Z:\\SYSTEM\\CONFIG.COM -GET cpu core >CORE.OUT', 'SET BLASTER >SOUND.OUT',
+# Accept closes setup and saves a different profile without changing the active CPU.
+# Boot Turbo remains live even after saving a different target/profile for next boot.
+case = run('accept-cpu', ['Down', 'F2'], [
     'ECHO 1>TURBO1', 'PAUSE', 'Z:\\SYSTEM\\CONFIG.COM -GET cpu cycles >ON.OUT',
-    'ECHO 1>TURBO2', 'PAUSE', 'Z:\\SYSTEM\\CONFIG.COM -GET cpu cycles >OFF.OUT',
-    'Z:\\SYSTEM\\PIAPPLY.COM /QUERY', 'EXIT'])
-assert (case/'CHECK.OUT').read_text().strip()=='LIVE', case/'run.log'
-assert (case/'APPLY.OUT').read_text().strip()=='OK', case/'run.log'
-assert b'486' in (case/'MODEL.OUT').read_bytes()
-assert b'dynamic_rec' in (case/'CORE.OUT').read_bytes()
-assert b'I5' in (case/'SOUND.OUT').read_bytes() and b'T6' in (case/'SOUND.OUT').read_bytes()
+    'ECHO 1>TURBO2', 'PAUSE', 'Z:\\SYSTEM\\CONFIG.COM -GET cpu cycles >OFF.OUT'], accepts=True)
+assert b'cycles=fixed 33445' in (case/'SYSTEM/PIDOS.CFG').read_bytes()
+assert b'turbo_mhz=0' in (case/'SYSTEM/PIDOS.CFG').read_bytes()
 assert b'33445' in (case/'ON.OUT').read_bytes(), (case/'ON.OUT').read_bytes()
 assert b'23880' in (case/'OFF.OUT').read_bytes(), (case/'OFF.OUT').read_bytes()
-assert b'cycles=fixed 23880' in (case/'TEMP/PIDLIVE.CFG').read_bytes()
-assert not (case/'run/pi-dos-session-restart').exists()
-
-case = run('dos-ui', request, ['ECHO 1>UIRUN', 'PIDOSCFG.EXE',
-    'Z:\\SYSTEM\\CONFIG.COM -GET cpu cycles >UI.OUT', 'EXIT'], ui=True)
-assert b'23880' in (case/'UI.OUT').read_bytes(), case/'run.log'
-assert b'sbtype=sb16' in (case/'run/pidos-session.cfg').read_bytes()
-
-case = run('dos-exit', request, ['ECHO 1>UIEXIT', 'PIDOSCFG.EXE',
-    'Z:\\SYSTEM\\CONFIG.COM -GET cpu cputype >UI.OUT', 'EXIT'], ui=True)
-assert b'pentium' in (case/'UI.OUT').read_bytes(), case/'run.log'
-assert not (case/'run/pidos-session.cfg').exists()
-case = run('invalid-turbo', request+'[pidos]\nturbo_mhz=66\n', [
-    'Z:\\SYSTEM\\PIAPPLY.COM /CHECK', 'TYPE C:\\TEMP\\PIDAPPLY.STA >CHECK.OUT', 'EXIT'])
-assert (case/'CHECK.OUT').read_text().strip()=='ERROR'
-assert not (case/'run/pidos-session.cfg').exists()
-
-case = run('restart', request+'[dosbox]\nmemsize=32\n', [
-    'Z:\\SYSTEM\\PIAPPLY.COM /CHECK', 'TYPE C:\\TEMP\\PIDAPPLY.STA >CHECK.OUT',
-    'Z:\\SYSTEM\\PIAPPLY.COM', 'ECHO should-not-run >AFTER.OUT', 'EXIT'])
-assert (case/'CHECK.OUT').read_text().strip()=='RESTART'
-assert (case/'run/pi-dos-session-restart').exists()
-assert b'memsize=32' in (case/'run/pidos-session.cfg').read_bytes()
-assert not (case/'AFTER.OUT').exists()
-for manager in ('xms', 'ems'):
-    case = run('disable-'+manager, request+'[dos]\n'+manager+'=false\n', [
-        'Z:\\SYSTEM\\PIAPPLY.COM /CHECK', 'TYPE C:\\TEMP\\PIDAPPLY.STA >CHECK.OUT',
-        'Z:\\SYSTEM\\PIAPPLY.COM', 'ECHO should-not-run >AFTER.OUT', 'EXIT'])
-    assert (case/'CHECK.OUT').read_text().strip()=='RESTART'
-    assert (case/'run/pi-dos-session-restart').exists()
-    assert (manager+'=false').encode() in (case/'run/pidos-session.cfg').read_bytes()
-    assert not (case/'AFTER.OUT').exists()
-case = run('dos-memory-ui', request, ['ECHO 1>UIMEM', 'PIDOSCFG.EXE',
-    'ECHO should-not-run >AFTER.OUT', 'EXIT'], ui=True)
-assert (case/'run/pi-dos-session-restart').exists(), case/'run.log'
-assert b'xms=false' in (case/'run/pidos-session.cfg').read_bytes()
-assert b'ems=false' in (case/'run/pidos-session.cfg').read_bytes()
-assert not (case/'AFTER.OUT').exists()
-case = run('286-boundary', request.replace('cputype=486','cputype=286').replace(
-    'core=dynamic_rec','core=normal').replace('cycles=fixed 23880','cycles=fixed 1510').replace(
-    'turbo_mhz=100','turbo_mhz=25'), [
-    'Z:\\SYSTEM\\PIAPPLY.COM /CHECK', 'TYPE C:\\TEMP\\PIDAPPLY.STA >CHECK.OUT', 'EXIT'])
-assert (case/'CHECK.OUT').read_text().strip()=='RESTART'
-assert not (case/'run/pidos-session.cfg').exists()
-case = run('invalid', request+'[pidos]\nshortcut_pause=Ctrl+Alt+T\n', [
-    'Z:\\SYSTEM\\PIAPPLY.COM /CHECK', 'TYPE C:\\TEMP\\PIDAPPLY.STA >CHECK.OUT', 'EXIT'])
-assert (case/'CHECK.OUT').read_text().strip()=='ERROR'
-assert not (case/'run/pidos-session.cfg').exists()
+run('cancel-cpu', ['Down', 'Escape'])
+run('removed-apply', ['Down', 'F4', 'Escape'])
+case = run('accept-memory', ['F6', 'Tab', 'Space', 'Tab', 'Space', 'F2'], accepts=True)
+assert b'xms=false' in (case/'SYSTEM/PIDOS.CFG').read_bytes()
+assert b'ems=false' in (case/'SYSTEM/PIDOS.CFG').read_bytes()
+# Mixer adjustments keep their live path; Accept commits and Cancel restores it.
+for action, expected in [('F2', b'95:95'), ('Escape', b'100:100')]:
+    case = run('mixer-'+action.lower(), ['F6']*4+['Left', action], accepts=action=='F2')
+    levels = (case/'LEVELS.OUT').read_bytes()
+    master = next(line for line in levels.splitlines() if line.startswith(b'MASTER'))
+    assert expected in master, master
+    if action=='F2':
+        assert b'mixer_master=95:95' in (case/'SYSTEM/PIDOS.CFG').read_bytes()
 
 # Verify presentation pixels are restored for palette CRT and RGB LCD surfaces.
 notice = work/'notice.cpp'
@@ -262,4 +239,4 @@ subprocess.run([str(cxx), '-std=c++14', '-O2', '-Wall', '-Wextra', '-Werror',
                 str(notice), '-lSDL2', '-o', str(notice_binary)], check=True)
 subprocess.run([str(qemu), '-L', str(target), '-E', 'LD_LIBRARY_PATH='+str(args.sdl_library_path.resolve()),
                 str(notice_binary)], env=dict(os.environ, SDL_VIDEODRIVER='dummy'), check=True)
-print('PASS: ARM64 Apply, XMS/EMS checkboxes and restart requests, sound environment, Turbo on/off/repeat suppression, invalid-setting rejection, and CRT/LCD notification restoration: '+str(work))
+print('PASS: ARM64 Accept/Cancel, reboot-only CPU/memory edits, removed Apply, live mixer commit/rollback, Turbo on/off/repeat suppression and CRT/LCD notice restoration: '+str(work))

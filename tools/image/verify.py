@@ -79,8 +79,11 @@ def main():
     for profile in (b'pentium-133', b'mmx-166', b'mmx-200'):
         require(profile not in packed_setup and profile not in packed_init,
                 'Setup or PID 1 still contains removed CPU profile: ' + profile.decode())
-    require(b'Restore defaults (F3)' in packed_setup,
-            'PIDOSCFG lacks the Restore defaults button')
+    require(b'Accept (F2)' in packed_setup and b'Cancel (Esc)' in packed_setup
+            and b'Apply (F4)' not in packed_setup,
+            'PIDOSCFG must use Accept/Cancel without a hardware Apply button')
+    require(b'F3: page defaults.' in packed_setup,
+            'PIDOSCFG lacks the F3 defaults shortcut hint')
     welcome_title = ('Welcome to Pi-DOS ' + (ROOT / 'VERSION').read_text().strip()).encode('ascii')
     require(welcome_title + b'\0' in packed_setup and welcome_title + b' - keyboard and clock\0' in packed_setup
             and b'Save and reboot (F2)' in packed_setup

@@ -451,41 +451,6 @@ int cfg_validate(void) {
  }
  return 1;
 }
-int cfg_apply_key(int key) {
- return (key>=K_CPU_TYPE && key<=K_SPEAKER) ||
-  (key>=K_VOL_MASTER && key<=K_VOL_USB_CD) ||
-  (key>=K_VOODOO && key<=K_GLIDE) ||
-  (key>=K_MIDI_PROFILE && key<=K_MIDI_DELAY) ||
-  (key>=K_SHORTCUT_REBOOT && key<=K_SHORTCUT_NEXT_FLOPPY) ||
-  key==K_TURBO_MHZ || key==K_SHORTCUT_TURBO || key==K_XMS || key==K_EMS;
-}
-int cfg_import_apply(const char *path) {
- FILE *in=fopen(path,"r"); char line[256],section[CFG_VALUE_SIZE]="",name[CFG_VALUE_SIZE],value[CFG_VALUE_SIZE];
- int key,ok=1; char *equals;
- if(!in) return 0;
- while(fgets(line,sizeof(line),in)) {
-  if(line[0]=='[') { sscanf(line,"[%79[^]]]",section); continue; }
-  equals=strchr(line,'='); if(!equals) continue;
-  *equals++=0; equals[strcspn(equals,"\r\n")]=0;
-  if(strlen(line)>=sizeof(name) || strlen(equals)>=sizeof(value)) {ok=0;continue;}
-  strcpy(name,line); strcpy(value,equals);
-  for(key=0;key<K_COUNT;++key) if(cfg_apply_key(key) && same(section,cfg_specs[key].section) && same(name,cfg_specs[key].key))
-   if(!cfg_set(key,value)) ok=0;
- }
- if(ferror(in)) ok=0;
- fclose(in); return ok;
-}
-int cfg_export_apply(const char *path) {
- FILE *out; int key,ok=1;
- if(!cfg_validate()) return 0;
- out=fopen(path,"wb");
- if(!out) { strcpy(cfg_error,"Cannot create the Apply request in C:\\TEMP."); return 0; }
- for(key=0;key<K_COUNT && ok;++key) if(cfg_apply_key(key))
-  ok=fprintf(out,"[%s]\r\n%s=%s\r\n",cfg_specs[key].section,cfg_specs[key].key,values[key])>=0;
- if(fclose(out)) ok=0;
- if(!ok) { remove(path); strcpy(cfg_error,"Could not write the complete Apply request."); }
- return ok;
-}
 int cfg_save_changes(const char *path) {
  char temporary[CFG_PATH_SIZE],backup[CFG_PATH_SIZE];
  char *dot,*slash,*backslash,*base; FILE *out; int ok;

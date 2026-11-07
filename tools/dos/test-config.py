@@ -272,7 +272,6 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert get('K_VGA666') == b'false'
     assert not set_value('K_VGA666', b'yes')
     assert set_value('K_VGA666', b'true')
-    assert not editor.cfg_apply_key(keys['K_VGA666'])
     assert editor.cfg_save_changes(encoded) and editor.cfg_load(encoded)
     assert get('K_VGA666') == b'true' and b'vga666=true\r\n' in path.read_bytes()
     editor.cfg_reset_page(7)
@@ -352,8 +351,8 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert get('K_JOY_TYPE') == b'2axis'
     assert editor.cfg_save_changes(encoded)
 
-    # Normal/Turbo speeds are constrained to the CPU family, and Apply exports
-    # only hardware/shortcuts without changing saved bytes or including AUTOEXEC.
+    # Turbo speeds are constrained to the CPU family and persist on acceptance;
+    # shared save validation rejects equal/slower choices.
     assert editor.cfg_load(encoded) and editor.cfg_select_cpu(5)
     assert set_value('K_TURBO_MHZ', b'133')
     assert not set_value('K_TURBO_MHZ', b'200')
@@ -367,17 +366,11 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     assert set_value('K_SHORTCUT_PAUSE', b'ctrl+alt+t')
     assert not editor.cfg_validate()
     assert set_value('K_SHORTCUT_PAUSE', b'none')
-    stable = path.read_bytes()
-    request = temporary / 'APPLY.CFG'
-    editor.cfg_export_apply.argtypes = [ctypes.c_char_p]
-    editor.cfg_import_apply.argtypes = [ctypes.c_char_p]
-    assert editor.cfg_export_apply(str(request).encode())
-    assert path.read_bytes() == stable
-    assert b'turbo_mhz=133' in request.read_bytes()
-    assert b'[autoexec]' not in request.read_bytes() and b'timezone=' not in request.read_bytes()
-    assert editor.cfg_load(encoded) and editor.cfg_import_apply(str(request).encode())
+    assert editor.cfg_save_changes(encoded)
+    assert b'turbo_mhz=133' in path.read_bytes()
+    assert editor.cfg_load(encoded)
     assert get('K_CPU_CYCLES') == b'fixed 33445' and get('K_TURBO_MHZ') == b'133'
-    assert editor.cfg_changed() and path.read_bytes() == stable
+    assert not editor.cfg_changed()
     assert editor.cfg_select_cpu(2) and get('K_TURBO_MHZ') == b'0'
     assert editor.cfg_select_cpu(0) and not set_value('K_TURBO_MHZ', b'100')
     assert editor.form_cpu_fields(speed_fields) == 1 and speed_fields[0].choices == b'0=Disabled'
@@ -449,7 +442,6 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
         assert not set_value(name, b'invalid')
         assert set_value(name, b'false')
         assert not editor.cfg_enabled(keys[name])
-        assert editor.cfg_apply_key(keys[name])
     assert editor.cfg_save_changes(memory_encoded) and editor.cfg_load(memory_encoded)
     saved_memory = memory_path.read_bytes()
     assert saved_memory.count(b'xms=false\r\n') == 2
@@ -460,12 +452,7 @@ with tempfile.TemporaryDirectory(prefix='pidoscfg-config.') as temporary:
     for mode, enabled in ((b'emsboard', 1), (b'emm386', 1), (b'1', 1), (b'0', 0)):
         assert set_value('K_EMS', mode)
         assert editor.cfg_enabled(keys['K_EMS']) == enabled
-    session_path = temporary / 'memory-session.cfg'
-    assert editor.cfg_export_apply(str(session_path).encode())
-    assert b'xms=true\r\n' in session_path.read_bytes()
-    assert b'ems=0\r\n' in session_path.read_bytes()
-    assert editor.cfg_load(memory_encoded)
-    assert editor.cfg_import_apply(str(session_path).encode())
+    assert editor.cfg_save_changes(memory_encoded) and editor.cfg_load(memory_encoded)
     assert get('K_XMS') == b'true' and get('K_EMS') == b'0'
     assert editor.cfg_load(encoded)
 

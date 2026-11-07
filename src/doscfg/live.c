@@ -124,7 +124,7 @@ void live_update(int mixer_page) {
  }
 }
 const char *live_status(void) {
- if(state==1 && matching) return "LIVE: active channels apply now; Exit restores unsaved preview levels.";
+ if(state==1 && matching) return "LIVE: active channels apply now; Cancel restores unsaved preview levels.";
  if(state==1) return "AFTER REBOOT: selected sound hardware differs from the running setup.";
  return "AFTER REBOOT: live mixer unavailable; settings can still be saved.";
 }

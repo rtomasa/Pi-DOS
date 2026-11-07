@@ -127,7 +127,7 @@ BOOL FAR PASCAL __export ValueDialog(HWND dialog, UINT message, WPARAM wparam, L
         SetDlgItemText(dialog, IDC_STATUS, field->type == FIELD_MIDI_PORT ?
             "Use the USB MIDI identity already selected in DOS PIDOSCFG.\n"
             "Device discovery is available in PIDOSCFG outside Windows." :
-            "Changes here are saved only when you click Save in Pi-DOS settings.");
+            "Changes here are saved only when you click Accept in Pi-DOS settings.");
         return TRUE;
     }
     if (!state) return FALSE;
@@ -200,7 +200,7 @@ static void fill_fields(HWND dialog, PageState FAR *state, int selected)
     else if (state->page == PAGE_CPU) {
         Field *f = &state->fields[0];
         f->key = -1; f->type = FIELD_CPU; f->label = "CPU profile"; f->choices = NULL; f->catalog = NULL;
-        f->help = "The CPU profile sets normal speed. Turbo offers faster speeds; Save applies next startup.";
+        f->help = "The CPU profile sets normal speed. Turbo offers faster speeds; Accept saves for next startup.";
         state->count = 1 + form_cpu_fields(state->fields + 1);
     } else if (state->page == PAGE_MEMORY) {
         Field *f = &state->fields[0];
@@ -245,8 +245,6 @@ BOOL FAR PASCAL __export OptionsDialog(HWND dialog, UINT message, WPARAM wparam,
     if (!state) return FALSE;
     if (message == WM_COMMAND) {
         if (wparam == IDCANCEL) {
-            if (state->root && cfg_changed() && MessageBox(dialog, "Discard the unsaved Pi-DOS settings?",
-                    "Pi-DOS settings", MB_OKCANCEL | MB_ICONQUESTION) != IDOK) return TRUE;
             EndDialog(dialog, 0); return TRUE;
         }
         if (wparam == IDOK) {

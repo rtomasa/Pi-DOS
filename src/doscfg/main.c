@@ -641,8 +641,8 @@ static void draw_page(int page,int focus,const char *path) {
   }
   for(i=0;i<n-1;++i) {
    unsigned char color=focus==i+1?SELECTED:NORMAL;
-   field_value(&fields[i],value); fill(5,14+i,70,1,color);
-   text(7,14+i,fields[i].label,color,28); text(37,14+i,value,color,37);
+   field_value(&fields[i],value); fill(5,15+i,70,1,color);
+   text(7,15+i,fields[i].label,color,28); text(37,15+i,value,color,37);
   }
   text(4,18,focus>0 && focus<n?fields[focus-1].help:selected<0?
    (cpu_speed_from_cycles(cfg_type,cfg_cycles)>=0?"The CPU profile sets normal speed. Turbo offers only faster speeds.":
@@ -690,36 +690,33 @@ static void draw_page(int page,int focus,const char *path) {
     "Game/driver port, IRQ and DMA must match this card's settings.",DIM,72);
   }
  }
- text(4,20,page==PAGE_MIXER?"Left/right: +/-5%. Save keeps levels. Restore defaults: this page only.":
-  "Apply: hardware + shortcuts now. Save: keep all pages for next startup.",PANEL,72);
- fill(4,22,23,1,focus==n?FOCUSED:BUTTON); text(4,22," Restore defaults (F3) ",focus==n?FOCUSED:BUTTON,23);
- fill(29,22,14,1,focus==n+1?FOCUSED:BUTTON); text(29,22,"  Apply (F4)  ",focus==n+1?FOCUSED:BUTTON,14);
- fill(45,22,14,1,focus==n+2?FOCUSED:BUTTON); text(45,22,"  Save (F2)   ",focus==n+2?FOCUSED:BUTTON,14);
- fill(61,22,14,1,focus==n+3?FOCUSED:BUTTON); text(61,22,"  Exit (Esc)  ",focus==n+3?FOCUSED:BUTTON,14);
- text(4,23,"Esc: Exit. Discard unsaved edits; restore unsaved mixer preview.",DIM,72);
+ text(4,20,page==PAGE_MIXER?"Left/right: +/-5%. Mixer previews live. F3: defaults for this page.":
+  "Accept saves all pages. Reboot to activate hardware and shortcut changes.",PANEL,72);
+ fill(18,22,19,1,focus==n?FOCUSED:BUTTON); text(18,22,"    Accept (F2)    ",focus==n?FOCUSED:BUTTON,19);
+ fill(44,22,19,1,focus==n+1?FOCUSED:BUTTON); text(44,22,"   Cancel (Esc)    ",focus==n+1?FOCUSED:BUTTON,19);
+ text(4,23,"Cancel discards edits and restores mixer preview. F3: page defaults.",DIM,72);
  fill(0,24,80,1,SELECTED); text(1,24,"F5/F6: pages  Tab: focus  Enter: edit",SELECTED,43); text(45,24,path,SELECTED,34);
  mouse_visible(1);
 }
 static int setup(const char *path) {
  int page=PAGE_CPU,focus=0,redraw=1,n,selected,count,action,x,y,previous=0;
- FILE *status_file; char status_text[16]; unsigned int key,ch,scan;
+ unsigned int key,ch,scan;
  Field fields[FORM_MAX_FIELDS]; union REGS r;
  screen_start();
  for(;;) {
   if(redraw) { mouse_visible(0); live_update(page==PAGE_MIXER); mouse_visible(1); }
   n=page==PAGE_CPU?1+form_cpu_fields(fields):page==PAGE_MEMORY?1+form_fields(page,fields):form_fields(page,fields);
-  if(focus>=n+4) focus=0;
+  if(focus>=n+2) focus=0;
   if(redraw) { draw_page(page,focus,path); redraw=0; }
   key=key_read(0); ch=key&255; scan=key>>8; action=0;
   if(key) {
    redraw=1;
    if(ch==27 || (!ch && (scan==45 || scan==46))) action=2;
-   else if(scan==60 || (!ch && scan==31)) action=1;
-   else if(scan==62) action=4;
+   else if(scan==60 || (!ch && (scan==30 || scan==31))) action=1;
    else if(scan==61 || (!ch && scan==19)) action=3;
    else if(scan==63 || scan==64) { page=(page+(scan==64?1:PAGE_COUNT-1))%PAGE_COUNT; focus=0; continue; }
-   else if(ch==9) focus=(focus+1)%(n+4);
-   else if(scan==15 && !ch) focus=(focus+n+3)%(n+4);
+   else if(ch==9) focus=(focus+1)%(n+2);
+   else if(scan==15 && !ch) focus=(focus+n+1)%(n+2);
    else if((page==PAGE_MEMORY || page==PAGE_CPU) && focus==0 && (scan==72 || scan==80 || scan==71 || scan==79)) {
     focus=0; selected=page==PAGE_CPU?cfg_profile():memory_selected();
     count=page==PAGE_CPU?PROFILE_COUNT:MEMORY_COUNT;
@@ -727,11 +724,11 @@ static int setup(const char *path) {
     else if(scan==72) selected=selected<=0?count-1:selected-1;
     else selected=(selected+1)%count;
     if(page==PAGE_CPU) cfg_select_cpu(selected); else select_memory(selected);
-   } else if(scan==72) focus=focus?focus-1:n+3;
-   else if(scan==80) focus=(focus+1)%(n+4);
+   } else if(scan==72) focus=focus?focus-1:n+1;
+   else if(scan==80) focus=(focus+1)%(n+2);
    else if(page==PAGE_MIXER && focus<n && (scan==75 || scan==77)) step_volume(&fields[focus],scan==75?-1:1);
    else if(ch==13 || ch==' ') {
-    if(focus==n) action=3; else if(focus==n+1) action=4; else if(focus==n+2) action=1; else if(focus==n+3) action=2;
+    if(focus==n) action=1; else if(focus==n+1) action=2;
     else if((page==PAGE_CPU || page==PAGE_MEMORY) && focus>0) edit_field(&fields[focus-1]);
     else if(page!=PAGE_CPU && page!=PAGE_MEMORY) edit_field(&fields[focus]);
    }
@@ -741,16 +738,14 @@ static int setup(const char *path) {
    if((r.x.bx&1) && !(previous&1)) {
     redraw=1;
     if(y==2 && x>=4 && x<4+PAGE_COUNT*TAB_STEP && (x-4)%TAB_STEP<TAB_WIDTH) { page=(x-4)/TAB_STEP; focus=0; }
-    else if(y==22 && x>=4 && x<27) action=3;
-    else if(y==22 && x>=29 && x<43) action=4;
-    else if(y==22 && x>=45 && x<59) action=1;
-    else if(y==22 && x>=61 && x<75) action=2;
+    else if(y==22 && x>=18 && x<37) action=1;
+    else if(y==22 && x>=44 && x<63) action=2;
     else if(x>=65 && x<73 && y==4 && field_offset(n,focus)>0) focus=field_offset(n,focus)-1;
     else if(x>=65 && x<73 && y==16 && field_offset(n,focus)+FORM_VISIBLE_FIELDS<n)
      focus=field_offset(n,focus)+FORM_VISIBLE_FIELDS;
     else if(x>=5 && x<75 && y>=5) {
      if(page==PAGE_CPU && y<5+PROFILE_COUNT) { cfg_select_cpu(y-5); focus=0; }
-     else if(page==PAGE_CPU && y>=14 && y<14+n-1) { focus=y-13; edit_field(&fields[focus-1]); }
+     else if(page==PAGE_CPU && y>=15 && y<15+n-1) { focus=y-14; edit_field(&fields[focus-1]); }
      else if(page==PAGE_MEMORY && y<5+MEMORY_COUNT) { select_memory(y-5); focus=0; }
      else if(page==PAGE_MEMORY && y>=14 && y<14+n-1) { focus=y-13; edit_field(&fields[focus-1]); }
      else if(page!=PAGE_CPU && page!=PAGE_MEMORY && y<5+FORM_VISIBLE_FIELDS && y-5+field_offset(n,focus)<n) {
@@ -763,44 +758,14 @@ static int setup(const char *path) {
    }
    previous=r.x.bx;
   }
-  if(action==3) { cfg_reset_page(page); focus=n; redraw=1; }
+  if(action==3) { cfg_reset_page(page); focus=0; redraw=1; }
   if(action==2) { mouse_visible(0); live_cancel(); screen_end(); return 0; }
-  if(action==4) {
-   if(!cfg_export_apply("C:\\TEMP\\PIDAPPLY.CFG")) { message("Unable to apply",cfg_error); redraw=1; continue; }
-   mouse_visible(0); screen_end();
-   remove("C:\\TEMP\\PIDAPPLY.STA");
-   system("Z:\\SYSTEM\\PIAPPLY.COM /CHECK");
-   status_text[0]=0; status_file=fopen("C:\\TEMP\\PIDAPPLY.STA","r");
-   if(status_file) { fgets(status_text,sizeof(status_text),status_file); fclose(status_file); }
-   remove("C:\\TEMP\\PIDAPPLY.STA");
-   if(strcmp(status_text,"LIVE") && strcmp(status_text,"RESTART")) {
-    remove("C:\\TEMP\\PIDAPPLY.CFG"); screen_start();
-    message("Unable to apply","Apply is unavailable, settings are invalid, or Windows is running.");
-    redraw=1; continue;
-   }
-   if(!strcmp(status_text,"RESTART")) {
-    puts("These hardware changes need a new DOS session. Running programs will close.");
-    puts("The Raspberry Pi stays running. Restart DOS now? (Y/N)");
-    key=key_read(1); ch=key&255;
-    if(ch!='y' && ch!='Y') {
-     remove("C:\\TEMP\\PIDAPPLY.CFG"); screen_start(); redraw=1; continue;
-    }
-   }
-   puts("Applying hardware and shortcuts. Unsaved settings last until poweroff/reboot.");
-   system("Z:\\SYSTEM\\PIAPPLY.COM");
-   status_text[0]=0; status_file=fopen("C:\\TEMP\\PIDAPPLY.STA","r");
-   if(status_file) { fgets(status_text,sizeof(status_text),status_file); fclose(status_file); }
-   remove("C:\\TEMP\\PIDAPPLY.STA"); remove("C:\\TEMP\\PIDAPPLY.CFG");
-   if(strcmp(status_text,"OK")) {
-    screen_start(); message("Unable to apply","The runtime could not apply these settings."); redraw=1; continue;
-   }
-   return 0;
-  }
   if(action==1) {
    if(cfg_save_changes(path)) {
     live_commit();
-    message("Configuration saved","Settings saved. Apply activates hardware now; other settings need REBOOT.");
-    redraw=1; continue;
+    screen_end();
+    puts("Settings saved. Reboot Pi-DOS to activate hardware and shortcut changes.");
+    return 0;
    }
    message("Unable to save",cfg_error); redraw=1;
   }
@@ -962,7 +927,7 @@ static void usage(void)
          "PIDOSCFG /PROFILE id             Save a profile without opening setup\n"
          "PIDOSCFG /FIRSTBOOT              Run the welcome / pending clock review\n"
          "Optional: /CONFIG path           Use another configuration file\n"
-         "Apply hardware with F4; RAM/video changes restart DOS only. MHz are speed classes.\n"
+         "Accept (F2) saves and exits; reboot to activate settings. MHz are speed classes.\n"
          "The previous configuration is backed up with a .BAK extension.\n"
          "Built with Open Watcom; runtime source and license: C:\\DOCS\\WATCOM.TXT");
 }
@@ -1002,12 +967,6 @@ int main(int argc, char **argv)
         if(last && (unsigned int)(last-argv[0]+1)<sizeof(catalog_dir)) {
             memcpy(catalog_dir,argv[0],last-argv[0]+1); catalog_dir[last-argv[0]+1]=0;
         }
-    }
-    if(!welcome && equal(path,DEFAULT_CONFIG)) {
-        remove("C:\\TEMP\\PIDLIVE.CFG");
-        system("Z:\\SYSTEM\\PIAPPLY.COM /QUERY >NUL");
-        cfg_import_apply("C:\\TEMP\\PIDLIVE.CFG");
-        remove("C:\\TEMP\\PIDLIVE.CFG");
     }
     if(!welcome) cfg_normalize_turbo();
     return welcome ? first_boot(path) : setup(path);

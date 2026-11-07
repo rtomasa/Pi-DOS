@@ -37,7 +37,7 @@ python3 - "$project/configs/pi-dos.conf" "$target/pi-dos/PIDOS.CFG" <<'PY'
 from pathlib import Path
 import sys
 source, destination = map(Path, sys.argv[1:])
-text = ('# Pi-DOS persistent configuration. Save keeps settings; DOS PIDOSCFG Apply activates hardware now.\n'
+text = ('# Pi-DOS persistent configuration. PIDOSCFG Accept saves and exits; reboot to activate settings.\n'
         '# Edit C:\\SYSTEM\\PIDOS.CFG; existing files are preserved on BOOT updates.\n'
         '# Optional [autoexec] commands run after system setup and C:\\AUTOEXEC.BAT.\n\n'
         '[pidos]\n'

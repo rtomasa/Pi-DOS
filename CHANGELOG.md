@@ -5,13 +5,12 @@
 - **VGA666 output:** Add a System checkbox, model-aware graphics support and
   automatic BOOT updates at clean shutdown. Save and reboot to switch outputs.
 - **Memory options:** Enable or disable XMS and EMS in DOS setup and the Windows
-  tool. DOS Apply restarts the DOS session; Windows saves for the next Pi-DOS boot.
-- **Apply settings:** Use **F4** in DOS `PIDOSCFG` to apply changes without
-  rebooting the Raspberry Pi. Some hardware changes require restarting DOS.
+  tool, then accept and reboot.
+- **Simpler setup:** **Accept** saves and exits; **Cancel** discards and exits.
+  Hardware settings take effect after reboot. Mixer adjustments stay live.
 - **Turbo mode:** Choose a faster speed for your CPU and toggle it with
   **Ctrl+Alt+T**. A brief notification appears on both CRT and LCD screens.
   Turbo settings are also available in the Windows configuration applet.
-- **Clearer setup:** Rename **Cancel** to **Exit** and clarify unsaved changes.
 - **Storage feedback:** Show disk-expansion progress and improve recovery
   diagnostics when the DOS drive is unavailable.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install shared session-control sources into a DOSBox-X source tree."""
+"""Install shared Turbo-control sources into a DOSBox-X source tree."""
 from pathlib import Path
 import shutil
 import sys
